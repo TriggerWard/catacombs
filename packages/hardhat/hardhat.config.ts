@@ -22,20 +22,20 @@ const etherscanApiKey = process.env.ETHERSCAN_API_KEY || "DNXJA8RX2Q3VZ4URQIWP7Z
 // Add any other testnet from config
 const configNetwork =
   process.env.NILLION_CONFIG_RPC_URL &&
-  process.env.NILLION_CONFIG_DEPLOYER_PRIVATE_KEY &&
-  process.env.NILLION_CONFIG_CHAIN_ID
+    process.env.NILLION_CONFIG_DEPLOYER_PRIVATE_KEY &&
+    process.env.NILLION_CONFIG_CHAIN_ID
     ? {
-        configNetwork: {
-          url: process.env.NILLION_CONFIG_RPC_URL,
-          accounts: [process.env.NILLION_CONFIG_DEPLOYER_PRIVATE_KEY],
-          chainId: parseInt(process.env.NILLION_CONFIG_CHAIN_ID),
-        },
-      }
+      configNetwork: {
+        url: process.env.NILLION_CONFIG_RPC_URL,
+        accounts: [process.env.NILLION_CONFIG_DEPLOYER_PRIVATE_KEY],
+        chainId: parseInt(process.env.NILLION_CONFIG_CHAIN_ID),
+      },
+    }
     : {};
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.17",
+    version: "0.8.16",
     settings: {
       optimizer: {
         enabled: true,
