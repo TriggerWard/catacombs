@@ -13,3 +13,7 @@ node_modules
 .DS_Store
 *.key
 .venv
+
+broadcast/
+cache/
+out/
