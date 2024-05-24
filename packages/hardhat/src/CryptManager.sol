@@ -1,8 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-// import "@uma/contracts-node/contracts/optimistic-oracle-v3/implementation/ClaimData.sol";
-// import "./external/ClaimData.sol";
 import "./interfaces/ExtendedOptimisticOracleV3Interface.sol";
 import "@uma/core/contracts/optimistic-oracle-v3/implementation/ClaimData.sol";
 
