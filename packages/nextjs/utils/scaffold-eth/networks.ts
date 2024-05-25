@@ -1,6 +1,8 @@
 import * as chains from "viem/chains";
 import scaffoldConfig from "~~/scaffold.config";
 
+const local = process.env.NEXT_PUBLIC_DEV;
+
 type ChainAttributes = {
   // color | [lightThemeColor, darkThemeColor]
   color: string | [string, string];
@@ -12,8 +14,8 @@ type ChainAttributes = {
 export type ChainWithAttributes = chains.Chain & Partial<ChainAttributes>;
 
 export const NETWORKS_EXTRA_DATA: Record<string, ChainAttributes> = {
-  [chains.hardhat.id]: {
-    color: "#b8af0c",
+  [22255222]: {
+    color: "#0693e3",
   },
   [chains.mainnet.id]: {
     color: "#ff8b9e",
@@ -57,6 +59,12 @@ export const NETWORKS_EXTRA_DATA: Record<string, ChainAttributes> = {
     color: "#fbebd4",
   },
 };
+
+if (local) {
+  NETWORKS_EXTRA_DATA[chains.hardhat.id] = {
+    color: "#b8af0c",
+  };
+}
 
 /**
  * Gives the block explorer transaction URL, returns empty string if the network is a local chain
