@@ -35,6 +35,8 @@ contract CryptManager is Test {
     );
 
     event DecryptInitiated(uint256 indexed cryptId, bytes decryptTrigger);
+    event DecryptFinalized(uint256 indexed cryptId, bool result);
+    event CryptDeleted(uint256 indexed cryptId);
 
     constructor(address _optimisticOracle) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
@@ -76,7 +78,7 @@ contract CryptManager is Test {
         require(!crypt.isFinalized, "Crypt is already finalized");
         require(crypt.assertionId == bytes32(0), "Crypt Decrypt is currently pending");
 
-        // Pull OO bonds. Caller must first approve minimum bond amount of default currency first.
+        // Pull OO bonds. Caller must first approve minimum bond amount of default currency.
         IERC20 bondCurrency = IERC20(optimisticOracle.defaultCurrency());
         uint256 bondAmount = optimisticOracle.getMinimumBond(address(bondCurrency));
         bondCurrency.transferFrom(msg.sender, address(this), bondAmount);
@@ -106,9 +108,6 @@ contract CryptManager is Test {
         );
 
         crypt.assertionId = assertionId;
-        require(crypt.assertionId != bytes32(0), "Failed to set assertionId");
-        require(crypts[cryptId].assertionId == assertionId, "Failed to set assertionId");
-
         assertionIdToCryptId[assertionId] = cryptId;
         emit DecryptInitiated(cryptId, crypt.decryptTrigger);
     }
@@ -117,14 +116,17 @@ contract CryptManager is Test {
         require(msg.sender == address(optimisticOracle));
         // If the assertion was true, then the data assertion is resolved.
         uint256 cryptId = assertionIdToCryptId[assertionId];
-        Crypt storage crypt = crypts[cryptId];
-
         if (assertedTruthfully) {
-            crypt.isFinalized = true;
-            if (crypt.decryptCallback != address(0)) {
-                DecryptCallbackInterface(crypt.decryptCallback).cryptDecryptCallback(cryptId);
+            crypts[cryptId].isFinalized = true;
+            if (crypts[cryptId].decryptCallback != address(0)) {
+                DecryptCallbackInterface(crypts[cryptId].decryptCallback).cryptDecryptCallback(cryptId);
             }
         }
+        else{
+            crypts[cryptId].assertionId = bytes32(0);
+            assertionIdToCryptId[assertionId] = 0;
+        }
+        emit DecryptFinalized(cryptId, assertedTruthfully);
     }
 
     function assertionDisputedCallback(bytes32 assertionId) public {
@@ -139,5 +141,6 @@ contract CryptManager is Test {
         require(crypts[cryptId].assertionId == bytes32(0), "Cannot delete a crypt with a pending assertion");
 
         delete crypts[cryptId];
+        emit CryptDeleted(cryptId);
     }
 }
