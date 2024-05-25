@@ -31,7 +31,7 @@ const targetNetwork = process.env.NEXT_PUBLIC_USE_NILLION_CONFIG === "true" ? co
 
 const scaffoldConfig = {
   // The networks on which your DApp is live
-  targetNetworks: [targetNetwork],
+  targetNetworks: [targetNetwork, chains.sepolia],
 
   // The interval at which your front-end polls the RPC servers for new data
   // it has no effect if you only target the local network (default is 4000)
