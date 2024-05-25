@@ -175,6 +175,53 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
         assertTrue(testDecryptCallback.wasCalled() == true, "Callback should be called");
     }
 
+    function test_setDecryptionKey() public {
+         // Create a crypt to have a non-zero initial cryptId for subsequent test.
+        cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(0));
+
+        // Deploy a callback recipient contract. Set the CryptManager address and the cryptId to check the callback.
+        TestDecryptCallback testDecryptCallback = new TestDecryptCallback(address(cryptManager), 1);
+        //DecryptCallback can only be called by CryptManager.
+        vm.expectRevert("Only Crypt can call this function");
+        testDecryptCallback.cryptDecryptCallback(1);
+
+
+        // Use the callback recipient contract as the decrypt callback.
+        vm.prank(TestAddress.account1);
+        uint256 cryptId =
+            cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(testDecryptCallback));
+        defaultCurrency.allocateTo(TestAddress.account2, minimumBond); // Setup currency and approve bond to initiate decrypt.
+        vm.startPrank(TestAddress.account2);
+
+        // Check that calls from accounts that aren't the warden are reverted
+        vm.expectRevert(
+            abi.encodeWithSelector(CryptManager.OnlyWarden.selector, cryptId, TestAddress.account2)
+        );
+        cryptManager.setDecryptionKey(cryptId, "threecats");
+
+        defaultCurrency.approve(address(cryptManager), minimumBond);
+        cryptManager.initiateDecrypt(cryptId);
+        vm.stopPrank();
+
+        CryptManager.Crypt memory crypt = cryptManager.getCrypt(cryptId);
+
+
+        // Advance time, settle assertion. Check that the callback was called within the callback contract.
+        assertTrue(testDecryptCallback.wasCalled() == false, "Callback should not be called yet");
+        timer.setCurrentTime(timer.getCurrentTime() + optimisticOracleV3.defaultLiveness() + 1);
+        assertTrue(optimisticOracleV3.settleAndGetAssertionResult(crypt.assertionId), "Settlement should succeed");
+        assertTrue(testDecryptCallback.wasCalled() == true, "Callback should be called");
+
+        string memory decryptionKey = "threecats";
+        vm.startPrank(warden);
+        cryptManager.setDecryptionKey(cryptId, decryptionKey);
+
+        crypt = cryptManager.getCrypt(cryptId);
+
+        assertTrue(compareStrings(crypt.decryptionKey, decryptionKey), "DecryptionKey not set");
+
+    }
+
     function test_DeleteCrypt() public {
         // Create a crypt to test deletion.
         vm.startPrank(TestAddress.account1);
@@ -183,7 +230,10 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
         // Attempt to delete the crypt by a non-owner, should revert
         vm.prank(TestAddress.account2);
-        vm.expectRevert("Only the crypt owner can delete the crypt");
+        // vm.expectRevert("Only the crypt owner can delete the crypt");
+        vm.expectRevert(
+            abi.encodeWithSelector(CryptManager.OnlyOwner.selector, cryptId, TestAddress.account2)
+        );
         cryptManager.deleteCrypt(cryptId);
 
         // Can not delete crypt if there is a pending decrypt.
@@ -193,7 +243,9 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
         cryptManager.initiateDecrypt(cryptId);
         vm.stopPrank();
         vm.prank(TestAddress.account1);
-        vm.expectRevert("Cannot delete a crypt with a pending assertion");
+         vm.expectRevert(
+            abi.encodeWithSelector(CryptManager.CryptAlreadyDecrypting.selector, cryptId)
+        );
         cryptManager.deleteCrypt(cryptId);
 
         // Make a new crypt and then try delete it (previous one is in pending state).
@@ -203,7 +255,9 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
         vm.stopPrank();
 
         // Attempt to access the deleted crypt, should revert
-        vm.expectRevert("Crypt ID does not exist");
+        vm.expectRevert(
+            abi.encodeWithSelector(CryptManager.CryptIdNotFound.selector, cryptId)
+        );
         cryptManager.getCrypt(cryptId);
     }
 }

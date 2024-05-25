@@ -38,8 +38,18 @@ contract CryptManager {
 
     event DecryptInitiated(uint256 indexed cryptId, bytes decryptTrigger);
     event DecryptFinalized(uint256 indexed cryptId, bool result);
+    event DecryptionKeySet(uint256 indexed cryptId, string decryptionKey);
     event CryptDeleted(uint256 indexed cryptId);
 
+    error CryptIdNotFound(uint256 cryptId);
+    error CryptAlreadyFinalized(uint256 cryptId);
+    error CryptNotFinalized(uint256 cryptId);
+    error CryptAlreadyDecrypting(uint256 cryptId);
+
+    error OnlyOracle(address caller);
+    error OnlyOwner(uint256 cryptId, address caller);
+    error OnlyWarden(uint256 cryptId, address caller);
+    
     constructor(address _optimisticOracle, uint64 _optimisticOracleLiveness) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
         optimisticOracleLiveness = _optimisticOracleLiveness;
@@ -50,7 +60,9 @@ contract CryptManager {
     }
 
     function getCrypt(uint256 cryptId) public view returns (Crypt memory) {
-        require(crypts[cryptId].owner != address(0), "Crypt ID does not exist");
+        if (crypts[cryptId].owner == address(0)) {
+            revert CryptIdNotFound(cryptId);
+        }
         return crypts[cryptId];
     }
 
@@ -65,6 +77,7 @@ contract CryptManager {
             ipfsDataHash: ipfsDataHash,
             decryptTrigger: decryptTrigger,
             nillionCrypt: nillionCrypt,
+            decryptionKey: "",
             decryptCallback: decryptCallback,
             warden: warden,
             owner: msg.sender,
@@ -78,10 +91,17 @@ contract CryptManager {
     }
 
     function initiateDecrypt(uint256 cryptId) public {
-        require(cryptId < crypts.length, "Crypt ID does not exist"); // Check crypt exists.
+        if (cryptId > crypts.length) {
+            revert CryptIdNotFound(cryptId);
+        }
         Crypt storage crypt = crypts[cryptId];
-        require(!crypt.isFinalized, "Crypt is already finalized");
-        require(crypt.assertionId == bytes32(0), "Crypt Decrypt is currently pending");
+
+        if (crypt.isFinalized) {
+            revert CryptAlreadyFinalized(cryptId);
+        }
+        if(crypt.assertionId != bytes32(0)) {
+            revert CryptAlreadyDecrypting(cryptId);
+        }
 
         // Pull OO bonds. Caller must first approve minimum bond amount of default currency.
         IERC20 bondCurrency = IERC20(optimisticOracle.defaultCurrency());
@@ -118,7 +138,9 @@ contract CryptManager {
     }
 
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) public {
-        require(msg.sender == address(optimisticOracle));
+        if (msg.sender != address(optimisticOracle)) {
+            revert OnlyOracle(msg.sender);
+        }
         // If the assertion was true, then the data assertion is resolved.
         uint256 cryptId = assertionIdToCryptId[assertionId];
         if (assertedTruthfully) {
@@ -139,12 +161,38 @@ contract CryptManager {
     }
 
     function deleteCrypt(uint256 cryptId) public {
-        require(cryptId < crypts.length, "Crypt ID does not exist");
-        require(crypts[cryptId].owner == msg.sender, "Only the crypt owner can delete the crypt");
-        require(!crypts[cryptId].isFinalized, "Cannot delete a finalized crypt");
-        require(crypts[cryptId].assertionId == bytes32(0), "Cannot delete a crypt with a pending assertion");
+        if (cryptId > crypts.length) 
+            revert CryptIdNotFound(cryptId);
+
+        Crypt storage crypt = crypts[cryptId];
+
+        if (crypt.owner != msg.sender) 
+            revert OnlyOwner(cryptId, msg.sender);
+
+        if (crypt.isFinalized) 
+            revert CryptAlreadyFinalized(cryptId);
+
+        if (crypts[cryptId].assertionId != bytes32(0)) 
+            revert CryptAlreadyDecrypting(cryptId);
 
         delete crypts[cryptId];
         emit CryptDeleted(cryptId);
+    }
+
+    function setDecryptionKey(uint256 cryptId, string memory decryptionKey) public {
+        if (cryptId > crypts.length) 
+            revert CryptIdNotFound(cryptId);
+        
+        Crypt storage crypt = crypts[cryptId];
+        if (msg.sender != crypt.warden) {
+            revert OnlyWarden(cryptId, msg.sender);
+        }
+
+        if (!crypt.isFinalized) {
+            revert CryptNotFinalized(cryptId);
+        }
+
+        crypt.decryptionKey = decryptionKey;
+        emit DecryptionKeySet(cryptId, decryptionKey);
     }
 }
