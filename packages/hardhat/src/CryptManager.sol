@@ -13,6 +13,8 @@ contract CryptManager {
         string ipfsDataHash;
         bytes decryptTrigger;
         string nillionCrypt;
+        string decryptionKey;
+        address warden;
         address decryptCallback;
         address owner;
         bytes32 assertionId;
@@ -21,6 +23,7 @@ contract CryptManager {
 
     Crypt[] public crypts;
     mapping(bytes32 => uint256) public assertionIdToCryptId;
+
     ExtendedOptimisticOracleV3Interface public optimisticOracle;
     uint64 public optimisticOracleLiveness;
 
@@ -29,6 +32,7 @@ contract CryptManager {
         string ipfsDataHash,
         string nillionCrypt,
         address decryptCallback,
+        address indexed warden,
         address indexed owner
     );
 
@@ -54,6 +58,7 @@ contract CryptManager {
         string memory ipfsDataHash,
         bytes memory decryptTrigger,
         string memory nillionCrypt,
+        address warden,
         address decryptCallback
     ) public returns (uint256) {
         Crypt memory newCrypt = Crypt({
@@ -61,13 +66,14 @@ contract CryptManager {
             decryptTrigger: decryptTrigger,
             nillionCrypt: nillionCrypt,
             decryptCallback: decryptCallback,
+            warden: warden,
             owner: msg.sender,
             assertionId: bytes32(0),
             isFinalized: false
         });
         crypts.push(newCrypt);
         uint256 cryptId = crypts.length - 1;
-        emit CryptCreated(cryptId, ipfsDataHash, nillionCrypt, decryptCallback, msg.sender);
+        emit CryptCreated(cryptId, ipfsDataHash, nillionCrypt, decryptCallback, warden, msg.sender);
         return cryptId;
     }
 
@@ -99,7 +105,7 @@ contract CryptManager {
             asserter,
             address(this), // This is callback recipient. Use this contract address as the callback target.
             address(0), // No sovereign security.
-            optimisticOracle.defaultLiveness(),
+            optimisticOracleLiveness,
             bondCurrency,
             bondAmount,
             optimisticOracle.defaultIdentifier(),

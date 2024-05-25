@@ -16,6 +16,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
     bytes decryptTrigger = bytes("testaDecryptTrigger");
     string nillionCrypt = "testNillionCryptAddress";
     address decryptCallback = address(420);
+    address warden = TestAddress.random;
 
     uint256 minimumBond;
 
@@ -30,7 +31,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
         assertTrue(cryptManager.getCrypts().length == 0, "Crypts should be empty before");
         vm.prank(TestAddress.account1);
-        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, decryptCallback);
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, decryptCallback);
         assertTrue(cryptManager.getCrypts().length == 1, "Crypts should be 1");
 
         CryptManager.Crypt memory crypt = cryptManager.getCrypt(cryptId);
@@ -47,7 +48,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
     function test_InitiateDecrypt() public {
         vm.prank(TestAddress.account1);
-        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, decryptCallback);
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, decryptCallback);
         assertTrue(cryptManager.getCrypts().length == 1, "Crypts should be 1");
 
         // Should not be able to initiate decrypt if dont have enough tokens or approval.
@@ -90,7 +91,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
     function test_FinalizeDecryptNoDispute() public {
         vm.prank(TestAddress.account1);
-        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(0));
         assertTrue(cryptManager.getCrypts().length == 1, "Crypts should be 1");
 
         // Setup currency and approve bond to initiate decrypt.
@@ -121,7 +122,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
     function test_FinalizeDecryptWithDispute() public {
         vm.prank(TestAddress.account1);
-        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(0));
 
         // Setup currency and approve bond to initiate decrypt.
         defaultCurrency.allocateTo(TestAddress.account2, minimumBond);
@@ -147,7 +148,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
     function test_FinalizeDecryptCallback() public {
         // Create a crypt to have a non-zero initial cryptId for subsequent test.
-        cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+        cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(0));
 
         // Deploy a callback recipient contract. Set the CryptManager address and the cryptId to check the callback.
         TestDecryptCallback testDecryptCallback = new TestDecryptCallback(address(cryptManager), 1);
@@ -158,7 +159,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
         // Use the callback recipient contract as the decrypt callback.
         vm.prank(TestAddress.account1);
         uint256 cryptId =
-            cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(testDecryptCallback));
+            cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(testDecryptCallback));
         defaultCurrency.allocateTo(TestAddress.account2, minimumBond); // Setup currency and approve bond to initiate decrypt.
         vm.startPrank(TestAddress.account2);
         defaultCurrency.approve(address(cryptManager), minimumBond);
@@ -177,7 +178,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
     function test_DeleteCrypt() public {
         // Create a crypt to test deletion.
         vm.startPrank(TestAddress.account1);
-        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(0));
         vm.stopPrank();
 
         // Attempt to delete the crypt by a non-owner, should revert
@@ -197,7 +198,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
         // Make a new crypt and then try delete it (previous one is in pending state).
         vm.startPrank(TestAddress.account1);
-        cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+        cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, warden, address(0));
         cryptManager.deleteCrypt(cryptId);
         vm.stopPrank();
 

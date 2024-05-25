@@ -29,7 +29,9 @@ export const initializeNillionClient = (
 ): nillion.NillionClient => new nillion.NillionClient(userkey, nodekey, websockets, payments_config);
 
 export const getNillionClient = async (userKey: string) => {
+  console.log("GETTING NILLION CLIENT")
   await nillion.default();
+  console.log("DEFU")
   const nillionUserKey = nillion.UserKey.from_base58(userKey);
   // temporary fix for an issue where nodekey cannot be reused between calls
   const wl = process.env.NEXT_PUBLIC_NILLION_NODEKEY_ALLOWLISTED_SEED

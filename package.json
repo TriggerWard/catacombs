@@ -6,7 +6,8 @@
     "packages": [
       "packages/hardhat",
       "packages/nextjs",
-      "packages/nillion"
+      "packages/nillion",
+      "packages/warden"
     ]
   },
   "scripts": {
