@@ -43,12 +43,12 @@ export const Footer = () => {
             <span className="">trigger_ward</span>
           </Link>
           <div className="mx-2">|</div>
-          <Link href="/" passHref>
+          <Link href="https://ethberlin.org/" passHref target="_blank">
             <span>ethberlin04</span>
           </Link>
         </div>
         <div className="flex flex-row gap-4">
-          <Link href="/" passHref>
+          <Link href="https://github.com/TriggerWard/catacombs" passHref target="_blank">
             <span className="">github</span>
           </Link>
           <Link href="/" passHref>
