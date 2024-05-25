@@ -54,7 +54,7 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   return (
     <html suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
-        <ThemeProvider enableSystem>
+        <ThemeProvider>
           <Suspense fallback={null}>
             <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
           </Suspense>
