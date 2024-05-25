@@ -1,8 +1,10 @@
+import { Fira_Code as FontSans } from "next/font/google";
 import "@rainbow-me/rainbowkit/styles.css";
 import { Metadata } from "next";
 import { ScaffoldEthAppWithProviders } from "~~/components/ScaffoldEthAppWithProviders";
 import { ThemeProvider } from "~~/components/ThemeProvider";
 import "~~/styles/globals.css";
+import { cn } from "~~/utils/ui";
 
 const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
   ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
@@ -12,16 +14,16 @@ const imageUrl = `${baseUrl}/thumbnail.jpg`;
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "Scaffold-Nillion App",
-    template: "%s | Scaffold-Nillion",
+    default: "Trigger Warding",
+    template: "%s | Trigger Warding",
   },
-  description: "Built with 🏗 Scaffold-Nillion",
+  description: "Built for ETHBerlin4",
   openGraph: {
     title: {
-      default: "Scaffold-Nillion App",
-      template: "%s | Scaffold-Nillion",
+      default: "Trigger Warding",
+      template: "%s | Trigger Warding",
     },
-    description: "Built with 🏗 Scaffold-Nillion",
+    description: "Built for ETHBerlin4",
     images: [
       {
         url: imageUrl,
@@ -32,20 +34,25 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: [imageUrl],
     title: {
-      default: "Scaffold-Nillion",
-      template: "%s | Scaffold-Nillion",
+      default: "Trigger Warding",
+      template: "%s | Trigger Warding",
     },
-    description: "Built with 🏗 Scaffold-Nillion",
+    description: "Built for ETHBerlin4",
   },
   icons: {
     icon: [{ url: "/favicon.png", sizes: "32x32", type: "image/png" }],
   },
 };
 
+const fontSans = FontSans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
 const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
   return (
     <html suppressHydrationWarning>
-      <body>
+      <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
         <ThemeProvider enableSystem>
           <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
         </ThemeProvider>

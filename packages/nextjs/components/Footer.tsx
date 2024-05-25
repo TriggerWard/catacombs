@@ -1,66 +1,70 @@
 import React from "react";
 import Link from "next/link";
-import { hardhat } from "viem/chains";
-import { CurrencyDollarIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
-import { SwitchTheme } from "~~/components/SwitchTheme";
-import { Faucet } from "~~/components/scaffold-eth";
-import { useTargetNetwork } from "~~/hooks/scaffold-eth/useTargetNetwork";
-import { useGlobalState } from "~~/services/store/store";
+
+const asciiArt = `
+=================================================================================
+`;
+const asciiArt2 = `
+  |                                                                            |
+  |____________________________________________________________________________| 
+`;
+const asciiArt3 = `
+ |                                                                              |
+`;
+const asciiArt4 = `
+ |______________________________________________________________________________|
+`;
+const asciiArt5 = `
+|                                                                                |
+`;
+const asciiArt6 = `
+|________________________________________________________________________________|
+`;
 
 /**
  * Site footer
  */
 export const Footer = () => {
-  const nativeCurrencyPrice = useGlobalState(state => state.nativeCurrencyPrice);
-  const { targetNetwork } = useTargetNetwork();
-  const isLocalNetwork = targetNetwork.id === hardhat.id;
-
   return (
-    <div className="min-h-0 py-5 px-1 mb-11 lg:mb-0">
-      <div>
-        <div className="fixed flex justify-between items-center w-full z-10 p-4 bottom-0 left-0 pointer-events-none">
-          <div className="flex flex-col md:flex-row gap-2 pointer-events-auto">
-            {nativeCurrencyPrice > 0 && (
-              <div>
-                <div className="btn btn-primary btn-sm font-normal gap-1 cursor-auto">
-                  <CurrencyDollarIcon className="h-4 w-4" />
-                  <span>{nativeCurrencyPrice}</span>
-                </div>
-              </div>
-            )}
-            {isLocalNetwork && (
-              <>
-                <Faucet />
-                <Link href="/blockexplorer" passHref className="btn btn-primary btn-sm font-normal gap-1">
-                  <MagnifyingGlassIcon className="h-4 w-4" />
-                  <span>Block Explorer</span>
-                </Link>
-              </>
-            )}
-          </div>
-          <SwitchTheme className={`pointer-events-auto ${isLocalNetwork ? "self-end md:self-auto" : ""}`} />
+    <div className="flex flex-col items-center w-[780px] mx-auto mb-20">
+      <div className="flex flex-col items-center justify-center">
+        <pre>{asciiArt}</pre>
+      </div>
+      <div className="flex flex-col items-center justify-center -mt-6">
+        <pre>{asciiArt2}</pre>
+      </div>
+
+      <div className="flex flex-col items-center justify-center -mt-6">
+        <pre>{asciiArt3}</pre>
+      </div>
+      <div className="flex flex-row items-center w-[750px] px-6 -mt-4 z-10 justify-between">
+        <div className="flex flex-row">
+          <Link href="/" passHref>
+            <span className="">trigger_ward</span>
+          </Link>
+          <div className="mx-2">|</div>
+          <Link href="/" passHref>
+            <span>ethberlin04</span>
+          </Link>
+        </div>
+        <div className="flex flex-row gap-4">
+          <Link href="/" passHref>
+            <span className="">github</span>
+          </Link>
+          <Link href="/" passHref>
+            <span>documentation</span>
+          </Link>
         </div>
       </div>
-      <div className="w-full">
-        <ul className="menu menu-horizontal w-full">
-          <div className="flex justify-center items-center gap-2 text-sm w-full">
-            <div className="text-center">
-              <a
-                href="https://github.com/NillionNetwork/scaffold-eth-with-nillion"
-                target="_blank"
-                rel="noreferrer"
-                className="link"
-              >
-                Fork Scaffold-Nillion
-              </a>
+      <div className="flex flex-col items-center justify-center -mt-8">
+        <pre>{asciiArt4}</pre>
+      </div>
 
-              <a href="https://nillion-snap-site.vercel.app/" target="_blank" rel="noreferrer" className="link ml-5">
-                Generate Nillion User Key
-              </a>
-            </div>
-            <span></span>
-          </div>
-        </ul>
+      <div className="flex flex-col items-center justify-center -mt-6 ml-2">
+        <pre>{asciiArt5}</pre>
+      </div>
+      <div className="flex flex-col items-center justify-center -mt-6 ml-2">
+        <pre>{asciiArt6}</pre>
       </div>
     </div>
   );
