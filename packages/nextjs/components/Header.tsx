@@ -48,10 +48,10 @@ ___---___---_________________________________________________________---___---__
       <div className="flex flex-row mt-4 items-center justify-between w-full z-10">
         <div className="flex flex-row gap-8">
           <HeaderMenuLink label="create crypt" href="/" />
-          <HeaderMenuLink label="view crypt" href="/crypt" />
+          <HeaderMenuLink label="view crypt" href="/view-crypt" />
         </div>
         <div className="flex flex-row items-center gap-8">
-          <HeaderMenuLink label="my crypts" href="/my-crypts" />
+          {/* <HeaderMenuLink label="my crypts" href="/my-crypts" /> */}
           <ConnectButton />
         </div>
       </div>

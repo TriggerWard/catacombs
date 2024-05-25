@@ -28,7 +28,7 @@ export function ConnectButton() {
             {(() => {
               if (!connected) {
                 return (
-                  <Button onClick={openConnectModal} type="button">
+                  <Button onClick={openConnectModal} variant="ghost" type="button">
                     Connect Wallet
                   </Button>
                 );
@@ -36,7 +36,7 @@ export function ConnectButton() {
 
               if (chain.unsupported) {
                 return (
-                  <Button onClick={openChainModal} type="button">
+                  <Button onClick={openChainModal} variant="ghost" type="button">
                     Wrong network
                   </Button>
                 );
@@ -44,7 +44,12 @@ export function ConnectButton() {
 
               return (
                 <div style={{ display: "flex", gap: 12 }}>
-                  <Button onClick={openChainModal} style={{ display: "flex", alignItems: "center" }} type="button">
+                  <Button
+                    onClick={openChainModal}
+                    variant="ghost"
+                    style={{ display: "flex", alignItems: "center" }}
+                    type="button"
+                  >
                     {chain.hasIcon && (
                       <div
                         style={{
@@ -64,7 +69,7 @@ export function ConnectButton() {
                     {chain.name}
                   </Button>
 
-                  <Button onClick={openAccountModal} type="button">
+                  <Button onClick={openAccountModal} type="button" variant="ghost">
                     {account.displayName}
                     {account.displayBalance ? ` (${account.displayBalance})` : ""}
                   </Button>

@@ -1,20 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CreateCryptForm } from "./components/create-crypt-form";
+import { useSearchParams } from "next/navigation";
+import { CryptDetails } from "./components/crypt-details";
 import type { NextPage } from "next";
 import { useAccount } from "wagmi";
+import { CopyString } from "~~/components/nillion/CopyString";
 import { NillionOnboarding } from "~~/components/nillion/NillionOnboarding";
+import { Address } from "~~/components/scaffold-eth";
 import { Button } from "~~/components/ui/button";
 import { getUserKeyFromSnap } from "~~/utils/nillion/getUserKeyFromSnap";
 
-const CreateCrypt: NextPage = () => {
+const ViewCrypt: NextPage = () => {
   const { address: connectedAddress } = useAccount();
   const [connectedToSnap, setConnectedToSnap] = useState<boolean>(false);
   const [userKey, setUserKey] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [nillion, setNillion] = useState<any>(null);
   const [nillionClient, setNillionClient] = useState<any>(null);
+
+  const searchParams = useSearchParams();
+  const cryptIdFromParams = searchParams.get("cryptId");
 
   async function handleConnectToSnap() {
     const snapResponse = await getUserKeyFromSnap();
@@ -55,7 +61,7 @@ const CreateCrypt: NextPage = () => {
 
   return (
     <div className="flex w-[383px]">
-      <div className="flex items-center flex-col w-full">
+      <div className="flex items-center flex-col pt-10">
         <div className="flex flex-col">
           <h1 className="text-xl">
             {connectedAddress && connectedToSnap && !userKey && (
@@ -70,14 +76,41 @@ const CreateCrypt: NextPage = () => {
               Connect to Snap with your Nillion User Key
             </Button>
           )}
+
+          {/* {connectedToSnap && (
+            <div>
+              {userKey && (
+                <div>
+                  <div className="flex justify-center items-center space-x-2">
+                    <p className="my-2 font-medium">
+                      🤫 Nillion User Key from{" "}
+                      <a target="_blank" href="https://nillion-snap-site.vercel.app/" rel="noopener noreferrer">
+                        MetaMask Flask
+                      </a>
+                      :
+                    </p>
+
+                    <CopyString str={userKey} />
+                  </div>
+
+                  {userId && (
+                    <div className="flex justify-center items-center space-x-2">
+                      <p className="my-2 font-medium">Connected as Nillion User ID:</p>
+                      <CopyString str={userId} />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )} */}
         </div>
 
-        <div className="flex-grow w-full mt-16 flex-shrink-0">
-          <div className="flex justify-center items-center gap-12 flex-col">
+        <div className="flex-grow w-full">
+          <div className="flex justify-center items-center gap-12 flex-col sm:flex-row">
             {!connectedToSnap ? (
               <NillionOnboarding />
             ) : (
-              <CreateCryptForm nillion={nillion} nillionClient={nillionClient} />
+              <CryptDetails cryptId={cryptIdFromParams || undefined} nillion={nillion} nillionClient={nillionClient} />
             )}
           </div>
         </div>
@@ -86,4 +119,4 @@ const CreateCrypt: NextPage = () => {
   );
 };
 
-export default CreateCrypt;
+export default ViewCrypt;

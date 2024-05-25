@@ -72,6 +72,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
         const pinnedMetadataIpfs = await pinCryptMetadataToIPFS(
           {
             fileIpfsCid: pinnedFileIpfs.IpfsHash,
+            fileType: file.type,
             triggerText,
             iv,
           },
@@ -100,6 +101,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
                 { internalType: "string", name: "ipfsDataHash", type: "string" },
                 { internalType: "bytes", name: "decryptTrigger", type: "bytes" },
                 { internalType: "string", name: "nillionCrypt", type: "string" },
+                { internalType: "address", name: "warden", type: "address" },
                 { internalType: "address", name: "decryptCallback", type: "address" },
               ],
               name: "createCrypt",
@@ -107,9 +109,16 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
               stateMutability: "nonpayable",
               type: "function",
             },
+            ,
           ] as const,
           functionName: "createCrypt",
-          args: [pinnedMetadataIpfs.IpfsHash, toHex(triggerText), nillionStoreId, zeroAddress],
+          args: [
+            pinnedMetadataIpfs.IpfsHash,
+            toHex(triggerText),
+            nillionStoreId,
+            "0x5d996408dbbBB9Fdbb15F7BA45A01e25f86E3131", // Default
+            zeroAddress,
+          ],
         });
         const { hash } = await writeContract(request);
         setSealCryptProgress(89);
@@ -128,6 +137,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
                 { indexed: false, internalType: "string", name: "ipfsDataHash", type: "string" },
                 { indexed: false, internalType: "string", name: "nillionCrypt", type: "string" },
                 { indexed: false, internalType: "address", name: "decryptCallback", type: "address" },
+                { indexed: true, internalType: "address", name: "warden", type: "address" },
                 { indexed: true, internalType: "address", name: "owner", type: "address" },
               ],
               name: "CryptCreated",
@@ -177,7 +187,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
   const canCryptBeSealed = file && triggerText;
 
   return (
-    <div className="flex flex-col w-full items-center space-x-2 gap-12">
+    <div className="flex flex-col w-full items-center gap-12 flex-shrink-0">
       <div className="grid w-full items-center gap-4">
         <Label htmlFor="secret-file">/my_treasure</Label>
         <Progress

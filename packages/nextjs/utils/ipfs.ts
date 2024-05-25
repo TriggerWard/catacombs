@@ -1,5 +1,5 @@
 export async function pinCryptMetadataToIPFS(
-  metadata: { fileIpfsCid: string; triggerText: string; iv: Uint8Array },
+  metadata: { fileIpfsCid: string; triggerText: string; iv: Uint8Array; fileType?: string },
   fileName: string,
 ) {
   const res = await fetch("https://api.pinata.cloud/pinning/pinJSONToIPFS", {
