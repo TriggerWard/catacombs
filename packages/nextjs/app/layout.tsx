@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Fira_Code as FontSans } from "next/font/google";
 import "@rainbow-me/rainbowkit/styles.css";
 import { Metadata } from "next";
@@ -12,7 +13,7 @@ const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
 const imageUrl = `${baseUrl}/thumbnail.jpg`;
 
 export const metadata: Metadata = {
-  metadataBase: new URL(baseUrl),
+  // metadataBase: new URL(baseUrl),
   title: {
     default: "Trigger Warding",
     template: "%s | Trigger Warding",
@@ -54,7 +55,9 @@ const ScaffoldEthApp = ({ children }: { children: React.ReactNode }) => {
     <html suppressHydrationWarning>
       <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
         <ThemeProvider enableSystem>
-          <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
+          <Suspense fallback={null}>
+            <ScaffoldEthAppWithProviders>{children}</ScaffoldEthAppWithProviders>
+          </Suspense>
         </ThemeProvider>
       </body>
     </html>
