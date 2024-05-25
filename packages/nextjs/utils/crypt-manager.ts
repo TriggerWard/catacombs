@@ -17,6 +17,7 @@ export const fetchCryptWithStatus = async (cryptId: bigint, cryptManagerAddress:
               { internalType: "string", name: "ipfsDataHash", type: "string" },
               { internalType: "bytes", name: "decryptTrigger", type: "bytes" },
               { internalType: "string", name: "nillionCrypt", type: "string" },
+              { internalType: "string", name: "decryptionKey", type: "string" },
               { internalType: "address", name: "warden", type: "address" },
               { internalType: "address", name: "decryptCallback", type: "address" },
               { internalType: "address", name: "owner", type: "address" },
