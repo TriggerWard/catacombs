@@ -75,22 +75,11 @@ async function main() {
     console.log("Warden Finalized Crypts:", wardenFinalizedCrypts);
 
 
-    console.log("Process.env", process.env)
 
-    const getDataCommand = `nillion --user-key ${process.env.NILLION_USER_KEY} \
-	--node-key ${process.env.NILLION_NODE_KEY} \
-	-b ${process.env.NEXT_PUBLIC_NILLION_BOOTNODE_MULTIADDRESS} \
-	--payments-private-key ${process.env.NEXT_PUBLIC_NILLION_WALLET_PRIVATE_KEY} \
-	--payments-chain-id ${process.env.NEXT_PUBLIC_NILLION_CHAIN_ID} \
-	--payments-rpc-endpoint ${process.env.NEXT_PUBLIC_NILLION_BLOCKCHAIN_RPC_ENDPOINT} \
-	--payments-sc-address ${process.env.NEXT_PUBLIC_NILLION_PAYMENTS_SC_ADDRESS} \
-	--blinding-factors-manager-sc-address ${process.env.NEXT_PUBLIC_NILLION_BLINDING_FACTORS_MANAGER_SC_ADDRESS} \
-  retrieve-secret \
-  --cluster-id ${process.env.NEXT_PUBLIC_NILLION_CLUSTER_ID} \
-  --store-id ${process.env.NEXT_PUBLIC_NILLION_STORE_ID} \
-  --secret-id ${process.env.NEXT_PUBLIC_NILLION_SECRET_ID}`
 
-    console.log("getDataCommand", getDataCommand)
+
+
+
 
     console.log("decodeAsciiArray", decodeAsciiArray([52, 50, 48]))
     // exec('your-shell-command', (error, stdout, stderr) => {
@@ -105,9 +94,30 @@ async function main() {
     //     console.log(`stdout: ${stdout}`);
     // });
 
+    console.log(retrieveSecretCommand("4AY2pXeHDHJg6SScbD1CAdNGhMRMbsvz75Nf14Wg9HuULRwxUt5TkFkzYEm9rYBQQKapz8o5Pd1dK9UrkYTuM3mQ", "9d9d6bc3-e864-4741-8585-85dc990a4247", "my_blob"))
+
 
 
 }
+
+export const retrieveSecretCommand = (
+    user_key: any,
+    store_id: any,
+    secret_name: any,
+) => `nillion --user-key ${user_key} \
+  --node-key ${process.env.NEXT_PUBLIC_NILLION_NODEKEY_TEXT_PARTY_1} \
+  -b ${process.env.NEXT_PUBLIC_NILLION_BOOTNODE_MULTIADDRESS} \
+  --payments-private-key ${process.env.NEXT_PUBLIC_NILLION_WALLET_PRIVATE_KEY} \
+  --payments-chain-id ${process.env.NEXT_PUBLIC_NILLION_CHAIN_ID} \
+  --payments-rpc-endpoint ${process.env.NEXT_PUBLIC_NILLION_BLOCKCHAIN_RPC_ENDPOINT} \
+  --payments-sc-address ${process.env.NEXT_PUBLIC_NILLION_PAYMENTS_SC_ADDRESS} \
+  --blinding-factors-manager-sc-address ${process.env.NEXT_PUBLIC_NILLION_BLINDING_FACTORS_MANAGER_SC_ADDRESS} \
+  retrieve-secret \
+  --cluster-id ${process.env.NEXT_PUBLIC_NILLION_CLUSTER_ID} \
+  --store-id ${store_id} \
+  --secret-id ${secret_name}`;
+
+
 function decodeAsciiArray(asciiArray: any) {
     return asciiArray.map((charCode: any) => String.fromCharCode(charCode)).join('');
 
@@ -116,7 +126,3 @@ function decodeAsciiArray(asciiArray: any) {
 main();
 
 
-nillion --user-key 4pEgXmeogsMAMgadC2zERGtXxpvLCkLeBVWPDQwERP3XRTCzSaSfx7ezZ51ntGwLuAoZNUqvPC8wo7jKoiaBzQc 	--node-key 23jhTcGxMzYzuTwHEVfzZFLC4jJVfW6zKPE6wqkFwoQ38UAnKsWhALQpWx9h8cavfhVPtMPDmNeKMkYxXdZ1AgManBLpR 	-b /ip4/127.0.0.1/tcp/47354/p2p/12D3KooWNQTeFoEFHLp46RVG3ydUSZ9neeoAL44DSRYjExWLsRQ4 	--payments-private-key 5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a 	--payments-chain-id 31337 	--payments-rpc-endpoint http://localhost:33279 	--payments-sc-address 5fc8d32690cc91d4c39d9d3abcbd16989f875707 	--blinding-factors-manager-sc-address a513e6e4b8f2a923d98304ec87f64353c4d5c853   retrieve-secret   --cluster-id 18d71351-b5d9-4d8d-bbcd-cdcc615badab   --store-id undefined   --secret-id undefined
-
-
-nillion --user-key 4pEgXmeogsMAMgadC2zERGtXxpvLCkLeBVWPDQwERP3XRTCzSaSfx7ezZ51ntGwLuAoZNUqvPC8wo7jKoiaBzQc --node-key 23jhTcGxMzYzuTwHEVfzZFLC4jJVfW6zKPE6wqkFwoQ38UAnKsWhALQpWx9h8cavfhVPtMPDmNeKMkYxXdZ1AgManBLpR -b /ip4/127.0.0.1/tcp/47354/p2p/12D3KooWNQTeFoEFHLp46RVG3ydUSZ9neeoAL44DSRYjExWLsRQ4 --payments-private-key 5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a --payments-chain-id 31337 --payments-rpc-endpoint http://localhost:33279 --payments-sc-address 5fc8d32690cc91d4c39d9d3abcbd16989f875707 --blinding-factors-manager-sc-address a513e6e4b8f2a923d98304ec87f64353c4d5c853 retrieve-secret --cluster-id 18d71351-b5d9-4d8d-bbcd-cdcc615badab --store-id 33944651-ed55-4853-93ec-569778630137 --secret-id my_blob
