@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 import "./fixtures/uma/CommonOptimisticOracleV3Test.sol";
 
 import "../src/CryptManager.sol";
+import "../src/test/TestDecryptCallback.sol";
 
 import "forge-std/console.sol";
 
@@ -89,7 +90,7 @@ contract Cryptmanager is CommonOptimisticOracleV3Test {
 
     function test_FinalizeDecryptNoDispute() public {
         vm.prank(TestAddress.account1);
-        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, decryptCallback);
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
         assertTrue(cryptManager.getCrypts().length == 1, "Crypts should be 1");
 
         // Setup currency and approve bond to initiate decrypt.
@@ -120,7 +121,7 @@ contract Cryptmanager is CommonOptimisticOracleV3Test {
 
     function test_FinalizeDecryptWithDispute() public {
         vm.prank(TestAddress.account1);
-        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, decryptCallback);
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
 
         // Setup currency and approve bond to initiate decrypt.
         defaultCurrency.allocateTo(TestAddress.account2, minimumBond);
@@ -144,7 +145,36 @@ contract Cryptmanager is CommonOptimisticOracleV3Test {
         assertTrue(crypt.isFinalized == false, "isFinalized should be false");
     }
 
-    function compareStrings(string memory a, string memory b) public returns (bool) {
+    function test_FinalizeDecryptCallback() public {
+        // Create a crypt to have a non-zero initial cryptId for subsequent test.
+        cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+
+        // Deploy a callback recipient contract. Set the CryptManager address and the cryptId to check the callback.
+        TestDecryptCallback testDecryptCallback = new TestDecryptCallback(address(cryptManager), 1);
+        //DecryptCallback can only be called by CryptManager.
+        vm.expectRevert("Only Crypt can call this function");
+        testDecryptCallback.cryptDecryptCallback(1);
+
+        // Use the callback recipient contract as the decrypt callback.
+        vm.prank(TestAddress.account1);
+        uint256 cryptId =
+            cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(testDecryptCallback));
+        defaultCurrency.allocateTo(TestAddress.account2, minimumBond); // Setup currency and approve bond to initiate decrypt.
+        vm.startPrank(TestAddress.account2);
+        defaultCurrency.approve(address(cryptManager), minimumBond);
+        cryptManager.initiateDecrypt(cryptId);
+        vm.stopPrank();
+
+        CryptManager.Crypt memory crypt = cryptManager.getCrypt(cryptId);
+
+        // Advance time, settle assertion. Check that the callback was called within the callback contract.
+        assertTrue(testDecryptCallback.wasCalled() == false, "Callback should not be called yet");
+        timer.setCurrentTime(timer.getCurrentTime() + optimisticOracleV3.defaultLiveness() + 1);
+        assertTrue(optimisticOracleV3.settleAndGetAssertionResult(crypt.assertionId), "Settlement should succeed");
+        assertTrue(testDecryptCallback.wasCalled() == true, "Callback should be called");
+    }
+
+    function compareStrings(string memory a, string memory b) public pure returns (bool) {
         return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }

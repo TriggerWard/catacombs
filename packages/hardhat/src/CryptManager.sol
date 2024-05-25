@@ -1,10 +1,12 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
-import "./interfaces/ExtendedOptimisticOracleV3Interface.sol";
-import "@uma/core/contracts/optimistic-oracle-v3/implementation/ClaimData.sol";
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
+import "./interfaces/ExtendedOptimisticOracleV3Interface.sol";
+import "./interfaces/DecryptCallbackInterface.sol";
+
+import "@uma/core/contracts/optimistic-oracle-v3/implementation/ClaimData.sol";
 
 import "forge-std/console.sol";
 import "forge-std/Test.sol";
@@ -119,6 +121,9 @@ contract CryptManager is Test {
 
         if (assertedTruthfully) {
             crypt.isFinalized = true;
+            if (crypt.decryptCallback != address(0)) {
+                DecryptCallbackInterface(crypt.decryptCallback).cryptDecryptCallback(cryptId);
+            }
         }
     }
 
@@ -129,7 +134,6 @@ contract CryptManager is Test {
 
     function deleteCrypt(uint256 cryptId) public {
         require(cryptId < crypts.length, "Crypt ID does not exist"); // Check crypt exists.
-        Crypt storage crypt = crypts[cryptId];
         delete crypts[cryptId];
     }
 }
