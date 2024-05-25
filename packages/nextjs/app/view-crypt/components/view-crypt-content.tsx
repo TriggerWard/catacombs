@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
+import { useAccount } from "wagmi";
 import { Button } from "~~/components/ui/button";
 import {
   Dialog,
@@ -27,6 +28,8 @@ export function ViewCryptContent(props: { crypt: FetchedCrypt; nillionClient: an
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [decoded, setDecoded] = useState<ArrayBuffer | undefined>();
 
+  const { address: connectedAccount } = useAccount();
+
   useEffect(() => {
     if (!crypt || !isOpen) {
       setProgress(0);
@@ -41,9 +44,20 @@ export function ViewCryptContent(props: { crypt: FetchedCrypt; nillionClient: an
       const nillionStoreId = crypt.cryptData.nillionCrypt;
       const nillionSecretName = `crypt_key_${cryptMetadataIpfsHash}`;
 
-      // retrieve secret key from Nillion
-      // TODO: replace with contract based key retrieval
-      const base64RetrievedKey = await retrieveSecretBlob(props.nillionClient, nillionStoreId, nillionSecretName);
+      let base64RetrievedKey: string;
+      if (crypt.cryptData.owner === connectedAccount) {
+        // owner can decrypt directly via nillion
+        base64RetrievedKey = await retrieveSecretBlob(props.nillionClient, nillionStoreId, nillionSecretName);
+        if (typeof base64RetrievedKey !== "string") {
+          throw new Error("Decryption key not found");
+        }
+      } else {
+        if (!crypt.cryptData.decryptionKey) {
+          throw new Error("Decryption key not set");
+        }
+        base64RetrievedKey = crypt.cryptData.decryptionKey;
+      }
+
       const importedKey = await importKey(base64RetrievedKey);
       console.log("Retrieved key from Nillion", { base64RetrievedKey, importedKey });
       setProgress(40);

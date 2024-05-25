@@ -7,9 +7,6 @@ import { Input } from "~~/components/ui/input";
 import { Label } from "~~/components/ui/label";
 import { useDeployedContractInfo } from "~~/hooks/scaffold-eth/useDeployedContractInfo";
 import { FetchedCrypt, fetchCryptWithStatus } from "~~/utils/crypt-manager";
-import { decrypt, importKey } from "~~/utils/crypto";
-import { fetchFromIPFS } from "~~/utils/ipfs";
-import { retrieveSecretBlob } from "~~/utils/nillion/retrieveSecretBlob";
 import { cn } from "~~/utils/ui";
 
 type Status = "idle" | "pending" | "success" | "error";
@@ -141,6 +138,8 @@ export function CryptDetails({
     }
   };
 
+  const isOwner = foundCrypt?.cryptData.owner === connectedAddress;
+
   return (
     <div className="flex flex-col items-center gap-12 flex-shrink-0">
       <div className="flex flex-col w-full gap-4 flex-shrink-0">
@@ -201,7 +200,7 @@ export function CryptDetails({
                   : "initiate unsealing"}
               </Button>
             )}
-            {foundCrypt.cryptData.owner === connectedAddress && foundCrypt.cryptStatus === "sealed" && (
+            {isOwner && foundCrypt.cryptStatus === "sealed" && (
               <Button
                 variant="outline"
                 className="text-red-500"
@@ -213,7 +212,9 @@ export function CryptDetails({
                   : "delete crypt"}
               </Button>
             )}
-            <ViewCryptContent nillionClient={nillionClient} crypt={foundCrypt} />
+            {isOwner || !!foundCrypt.cryptData.decryptionKey ? (
+              <ViewCryptContent nillionClient={nillionClient} crypt={foundCrypt} />
+            ) : null}
           </div>
         </div>
       ) : (
