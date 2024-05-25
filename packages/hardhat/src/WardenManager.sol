@@ -6,10 +6,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/ExtendedOptimisticOracleV3Interface.sol";
 
 import "@uma/core/contracts/optimistic-oracle-v3/implementation/ClaimData.sol";
+import "@uma/core/contracts/common/implementation/MultiCaller.sol";
 
 contract WardenManager {
     struct Warden {
-        string ipfsInfo;
+        string ipfsInfoHash;
         string nillionKey;
         bytes32 assertionId;
         bool isSlashed;
@@ -21,27 +22,63 @@ contract WardenManager {
     mapping(bytes32 => address) public assertionIdToWarden;
     ExtendedOptimisticOracleV3Interface public optimisticOracle;
 
+    // Events
+    event WardenRegistered(address indexed warden, string ipfsInfoHash, string nillionKey);
+    event StakePlaced(address indexed warden, address indexed staker, IERC20 token, uint256 amount);
+    event StakeWithdrawn(address indexed warden, address indexed staker, IERC20 token, uint256 amount);
+    event WardenSlashed(address indexed warden, bytes32 assertionId, address indexed caller);
+    event SlashExecuted(address indexed warden, IERC20 token, uint256 amount, address indexed caller);
+    event AssertionResolved(bytes32 indexed assertionId, bool assertedTruthfully, address indexed caller);
+    event AssertionDisputed(bytes32 indexed assertionId, address indexed warden, address indexed caller);
+
     constructor(address _optimisticOracle) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
     }
 
-    function registerWarden(string memory wardenIpfsInfo, string memory wardenNillionKey) public {
-        wardens[msg.sender].ipfsInfo = wardenIpfsInfo;
+    function getWardenStakeInToken(address warden, IERC20 token) public view returns (uint256) {
+        return wardens[warden].stakedBalances[token];
+    }
+
+    function getWardenInfo(address warden)
+        public
+        view
+        returns (string memory ipfsInfoHash, string memory nillionKey, bytes32 assertionId, bool isSlashed)
+    {
+        return (
+            wardens[warden].ipfsInfoHash,
+            wardens[warden].nillionKey,
+            wardens[warden].assertionId,
+            wardens[warden].isSlashed
+        );
+    }
+
+    function getUserStakeOnWarden(address warden, address user, IERC20 token) public view returns (uint256) {
+        return wardens[warden].stakersToStakedBalances[user][token];
+    }
+
+    function registerWarden(string memory wardenIpfsInfoHash, string memory wardenNillionKey) public {
+        wardens[msg.sender].ipfsInfoHash = wardenIpfsInfoHash;
         wardens[msg.sender].nillionKey = wardenNillionKey;
+        emit WardenRegistered(msg.sender, wardenIpfsInfoHash, wardenNillionKey);
     }
 
     function stakeOnWarden(address warden, IERC20 token, uint256 amount) public {
+        require(wardens[warden].assertionId == bytes32(0), "Cannot stake tokens while assertion is pending");
+        require(!wardens[warden].isSlashed, "Cannot stake tokens if a warden has been slashed");
         token.transferFrom(msg.sender, address(this), amount);
         wardens[warden].stakersToStakedBalances[msg.sender][token] += amount;
         wardens[warden].stakedBalances[token] += amount;
+        emit StakePlaced(warden, msg.sender, token, amount);
     }
 
     function withdrawStake(address warden, IERC20 token, uint256 amount) public {
         require(wardens[warden].stakersToStakedBalances[msg.sender][token] >= amount, "Not enough staked tokens");
         require(wardens[warden].assertionId == bytes32(0), "Cannot withdraw staked tokens while assertion is pending");
+        require(!wardens[warden].isSlashed, "Cannot withdraw staked tokens if a warden has been slashed");
         wardens[warden].stakersToStakedBalances[msg.sender][token] -= amount;
         wardens[warden].stakedBalances[token] -= amount;
         token.transfer(msg.sender, amount);
+        emit StakeWithdrawn(warden, msg.sender, token, amount);
     }
 
     function slashWarden(address warden) public {
@@ -66,7 +103,7 @@ contract WardenManager {
                 ClaimData.toUtf8BytesAddress(address(this))
             ),
             asserter,
-            address(0),
+            address(this), // This is callback recipient. Use this contract address as the callback target.
             address(0), // No sovereign security.
             optimisticOracle.defaultLiveness(),
             bondCurrency,
@@ -77,6 +114,7 @@ contract WardenManager {
 
         wardens[warden].assertionId = assertionId;
         assertionIdToWarden[assertionId] = warden;
+        emit WardenSlashed(warden, assertionId, msg.sender);
     }
 
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) public {
@@ -88,17 +126,21 @@ contract WardenManager {
             wardens[assertionIdToWarden[assertionId]].assertionId = bytes32(0);
             assertionIdToWarden[assertionId] = address(0);
         }
+        emit AssertionResolved(assertionId, assertedTruthfully, msg.sender);
     }
 
     function executeSlash(address warden, IERC20 token) public {
         require(wardens[warden].isSlashed, "Warden is not slashed");
+        uint256 amount = wardens[warden].stakedBalances[token];
         wardens[warden].stakersToStakedBalances[msg.sender][token] = 0;
-        token.transfer(address(0), wardens[warden].stakedBalances[token]);
+        token.transfer(0x000000000000000000000000000000000000dEaD, amount);
         wardens[warden].stakedBalances[token] = 0;
+        emit SlashExecuted(warden, token, amount, msg.sender);
     }
 
     function assertionDisputedCallback(bytes32 assertionId) public {
         wardens[assertionIdToWarden[assertionId]].assertionId = bytes32(0);
         assertionIdToWarden[assertionId] = address(0);
+        emit AssertionDisputed(assertionId, assertionIdToWarden[assertionId], msg.sender);
     }
 }

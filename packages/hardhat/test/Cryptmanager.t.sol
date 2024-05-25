@@ -8,7 +8,7 @@ import "../src/test/TestDecryptCallback.sol";
 
 import "forge-std/console.sol";
 
-contract Cryptmanager is CommonOptimisticOracleV3Test {
+contract CryptmanagerTest is CommonOptimisticOracleV3Test {
     CryptManager public cryptManager;
 
     // Sample data for testing.
@@ -204,9 +204,5 @@ contract Cryptmanager is CommonOptimisticOracleV3Test {
         // Attempt to access the deleted crypt, should revert
         vm.expectRevert("Crypt ID does not exist");
         cryptManager.getCrypt(cryptId);
-    }
-
-    function compareStrings(string memory a, string memory b) public pure returns (bool) {
-        return keccak256(bytes(a)) == keccak256(bytes(b));
     }
 }

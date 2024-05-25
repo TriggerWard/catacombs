@@ -8,10 +8,7 @@ import "./interfaces/DecryptCallbackInterface.sol";
 
 import "@uma/core/contracts/optimistic-oracle-v3/implementation/ClaimData.sol";
 
-import "forge-std/console.sol";
-import "forge-std/Test.sol";
-
-contract CryptManager is Test {
+contract CryptManager {
     struct Crypt {
         string ipfsDataHash;
         bytes decryptTrigger;
@@ -121,8 +118,7 @@ contract CryptManager is Test {
             if (crypts[cryptId].decryptCallback != address(0)) {
                 DecryptCallbackInterface(crypts[cryptId].decryptCallback).cryptDecryptCallback(cryptId);
             }
-        }
-        else{
+        } else {
             crypts[cryptId].assertionId = bytes32(0);
             assertionIdToCryptId[assertionId] = 0;
         }
