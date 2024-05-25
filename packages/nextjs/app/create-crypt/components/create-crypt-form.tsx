@@ -154,31 +154,6 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
       const cryptCreatedLog = receipt.logs.find(log => log.topics[0] === encodedEventTopic);
       const cryptId = hexToBigInt(cryptCreatedLog?.topics[1] || "0x0");
       console.log("Crypt created", cryptId);
-
-      //// TESTS
-
-      // test retrieve secret key from Nillion
-      const base64RetrievedKey = await retrieveSecretBlob(nillionClient, nillionStoreId, nillionSecretName);
-      const importedKey = await importKey(base64RetrievedKey);
-      console.log("Retrieved key from Nillion", { base64RetrievedKey, importedKey });
-
-      // test fetch metadata
-      const metadata = await (await fetchFromIPFS(pinnedMetadataIpfs.IpfsHash)).json();
-      console.log("Fetched crypt metadata:", metadata);
-      const fetchedEncryptedFile = await fetchFromIPFS(metadata.fileIpfsCid);
-      const fetchedEncryptedFileBuffer = await fetchedEncryptedFile.arrayBuffer();
-
-      // test decrypt file
-      const { decrypted, utf8Decrypted } = await decrypt(
-        importedKey,
-        Buffer.from(metadata.iv, "base64"),
-        fetchedEncryptedFileBuffer,
-      );
-      console.log("Decrypted file", {
-        decrypted,
-        utf8Decrypted,
-      });
-
       setSealCryptStatus("success");
     } catch (e) {
       console.error(e);
