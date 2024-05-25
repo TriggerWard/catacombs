@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { prepareWriteContract, waitForTransaction, writeContract } from "@wagmi/core";
 import { encodeEventTopics, hexToBigInt, toHex, zeroAddress } from "viem";
+import { useNetwork, useSwitchNetwork } from "wagmi";
 import { Button } from "~~/components/ui/button";
 import { Input } from "~~/components/ui/input";
 import { Label } from "~~/components/ui/label";
 import { Progress } from "~~/components/ui/progress";
 import { Textarea } from "~~/components/ui/textarea";
 import { useDeployedContractInfo } from "~~/hooks/scaffold-eth/useDeployedContractInfo";
-import { decrypt, encrypt, generateKey, importKey } from "~~/utils/crypto";
+import { encrypt, generateKey } from "~~/utils/crypto";
 import { fileToArrayBuffer } from "~~/utils/file";
-import { fetchFromIPFS, pinCryptMetadataToIPFS, pinFileToIPFS } from "~~/utils/ipfs";
-import { retrieveSecretBlob } from "~~/utils/nillion/retrieveSecretBlob";
+import { pinCryptMetadataToIPFS, pinFileToIPFS } from "~~/utils/ipfs";
 import { storeSecretsBlob } from "~~/utils/nillion/storeSecretsBlob";
 import { cn } from "~~/utils/ui";
 import { wait } from "~~/utils/wait";
@@ -28,6 +28,10 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
   const [sealCryptProgress, setSealCryptProgress] = useState<number>(0);
 
   const { data: cryptManagerData, isLoading } = useDeployedContractInfo("CryptManager");
+  const { switchNetwork } = useSwitchNetwork({
+    chainId: 11155111,
+  });
+  const { chain } = useNetwork();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -185,7 +189,11 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
         <Label htmlFor="trigger">/ward_trigger</Label>
         <Textarea id="trigger" onChange={handleTriggerTextChange} />
       </div>
-      {sealCryptStatus === "pending" ? (
+      {chain?.id !== 11155111 ? (
+        <Button variant="ghost" onClick={() => switchNetwork?.()}>
+          Switch network
+        </Button>
+      ) : sealCryptStatus === "pending" ? (
         <Progress className={cn("h-10")} value={sealCryptProgress}>
           <span className="text-white">sealing crypt...</span>
         </Progress>
