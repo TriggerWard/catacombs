@@ -21,7 +21,7 @@ contract CryptmanagerTest is CommonOptimisticOracleV3Test {
 
     function setUp() public {
         _commonSetup();
-        cryptManager = new CryptManager(address(optimisticOracleV3));
+        cryptManager = new CryptManager(address(optimisticOracleV3), optimisticOracleV3.defaultLiveness());
         minimumBond = optimisticOracleV3.getMinimumBond(address(defaultCurrency));
     }
 

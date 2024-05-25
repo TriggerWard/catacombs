@@ -21,6 +21,7 @@ contract WardenManager {
     mapping(address => Warden) public wardens;
     mapping(bytes32 => address) public assertionIdToWarden;
     ExtendedOptimisticOracleV3Interface public optimisticOracle;
+    uint64 public optimisticOracleLiveness;
 
     // Events
     event WardenRegistered(address indexed warden, string ipfsInfoHash, string nillionKey);
@@ -31,8 +32,9 @@ contract WardenManager {
     event AssertionResolved(bytes32 indexed assertionId, bool assertedTruthfully, address indexed caller);
     event AssertionDisputed(bytes32 indexed assertionId, address indexed warden, address indexed caller);
 
-    constructor(address _optimisticOracle) {
+    constructor(address _optimisticOracle, uint64 _optimisticOracleLiveness) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
+        optimisticOracleLiveness = _optimisticOracleLiveness;
     }
 
     function getWardenStakeInToken(address warden, IERC20 token) public view returns (uint256) {
@@ -105,7 +107,7 @@ contract WardenManager {
             asserter,
             address(this), // This is callback recipient. Use this contract address as the callback target.
             address(0), // No sovereign security.
-            optimisticOracle.defaultLiveness(),
+            optimisticOracleLiveness,
             bondCurrency,
             bondAmount,
             optimisticOracle.defaultIdentifier(),

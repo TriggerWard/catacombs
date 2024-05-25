@@ -22,6 +22,7 @@ contract CryptManager {
     Crypt[] public crypts;
     mapping(bytes32 => uint256) public assertionIdToCryptId;
     ExtendedOptimisticOracleV3Interface public optimisticOracle;
+    uint64 public optimisticOracleLiveness;
 
     event CryptCreated(
         uint256 indexed cryptId,
@@ -35,8 +36,9 @@ contract CryptManager {
     event DecryptFinalized(uint256 indexed cryptId, bool result);
     event CryptDeleted(uint256 indexed cryptId);
 
-    constructor(address _optimisticOracle) {
+    constructor(address _optimisticOracle, uint64 _optimisticOracleLiveness) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
+        optimisticOracleLiveness = _optimisticOracleLiveness;
     }
 
     function getCrypts() public view returns (Crypt[] memory) {

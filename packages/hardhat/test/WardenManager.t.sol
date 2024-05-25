@@ -13,7 +13,7 @@ contract WardenManagerTest is CommonOptimisticOracleV3Test {
 
     function setUp() public {
         _commonSetup();
-        wardenManager = new WardenManager(address(optimisticOracleV3));
+        wardenManager = new WardenManager(address(optimisticOracleV3), optimisticOracleV3.defaultLiveness());
         minimumBond = optimisticOracleV3.getMinimumBond(address(defaultCurrency));
     }
 
