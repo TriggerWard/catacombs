@@ -32,6 +32,14 @@ contract WardenManager {
     event AssertionResolved(bytes32 indexed assertionId, bool assertedTruthfully, address indexed caller);
     event AssertionDisputed(bytes32 indexed assertionId, address indexed warden, address indexed caller);
 
+    error AssertionPending(address warden);
+    error WardenSlashPending(address warden);
+    error WardenAlreadySlashed(address warden);
+    error WardenNotSlashed(address warden);
+
+    error InsufficientStake();
+    error MustBeOracle();
+
     constructor(address _optimisticOracle, uint64 _optimisticOracleLiveness) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
         optimisticOracleLiveness = _optimisticOracleLiveness;
@@ -65,8 +73,9 @@ contract WardenManager {
     }
 
     function stakeOnWarden(address warden, IERC20 token, uint256 amount) public {
-        require(wardens[warden].assertionId == bytes32(0), "Cannot stake tokens while assertion is pending");
-        require(!wardens[warden].isSlashed, "Cannot stake tokens if a warden has been slashed");
+        if (wardens[warden].assertionId != bytes32(0)) revert AssertionPending(warden);
+        if (wardens[warden].isSlashed) revert WardenAlreadySlashed(warden);
+
         token.transferFrom(msg.sender, address(this), amount);
         wardens[warden].stakersToStakedBalances[msg.sender][token] += amount;
         wardens[warden].stakedBalances[token] += amount;
@@ -74,9 +83,9 @@ contract WardenManager {
     }
 
     function withdrawStake(address warden, IERC20 token, uint256 amount) public {
-        require(wardens[warden].stakersToStakedBalances[msg.sender][token] >= amount, "Not enough staked tokens");
-        require(wardens[warden].assertionId == bytes32(0), "Cannot withdraw staked tokens while assertion is pending");
-        require(!wardens[warden].isSlashed, "Cannot withdraw staked tokens if a warden has been slashed");
+        if (wardens[warden].stakersToStakedBalances[msg.sender][token] <= amount) revert InsufficientStake();
+        if (wardens[warden].assertionId != bytes32(0)) revert AssertionPending(warden);
+        if (wardens[warden].isSlashed) revert WardenAlreadySlashed(warden);
         wardens[warden].stakersToStakedBalances[msg.sender][token] -= amount;
         wardens[warden].stakedBalances[token] -= amount;
         token.transfer(msg.sender, amount);
@@ -84,7 +93,7 @@ contract WardenManager {
     }
 
     function slashWarden(address warden) public {
-        require(wardens[warden].assertionId == bytes32(0), "Cannot slash warden while assertion is pending");
+        if (wardens[warden].assertionId != bytes32(0)) revert WardenSlashPending(warden);
 
         // Pull OO bonds. Caller must first approve minimum bond amount of default currency.
         IERC20 bondCurrency = IERC20(optimisticOracle.defaultCurrency());
@@ -120,7 +129,8 @@ contract WardenManager {
     }
 
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) public {
-        require(msg.sender == address(optimisticOracle));
+        if (msg.sender != address(optimisticOracle)) revert MustBeOracle();
+
         // If the assertion was true, then the warden is slashed.
         if (assertedTruthfully) {
             wardens[assertionIdToWarden[assertionId]].isSlashed = true;
@@ -132,7 +142,7 @@ contract WardenManager {
     }
 
     function executeSlash(address warden, IERC20 token) public {
-        require(wardens[warden].isSlashed, "Warden is not slashed");
+        if (!wardens[warden].isSlashed) revert WardenNotSlashed(warden);
         uint256 amount = wardens[warden].stakedBalances[token];
         wardens[warden].stakersToStakedBalances[msg.sender][token] = 0;
         token.transfer(0x000000000000000000000000000000000000dEaD, amount);

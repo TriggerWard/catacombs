@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { prepareWriteContract, waitForTransaction, writeContract } from "@wagmi/core";
 import { encodeEventTopics, hexToBigInt, toHex, zeroAddress } from "viem";
+import { useNetwork, useSwitchNetwork } from "wagmi";
 import { Button } from "~~/components/ui/button";
 import { Input } from "~~/components/ui/input";
 import { Label } from "~~/components/ui/label";
 import { Progress } from "~~/components/ui/progress";
 import { Textarea } from "~~/components/ui/textarea";
 import { useDeployedContractInfo } from "~~/hooks/scaffold-eth/useDeployedContractInfo";
-import { decrypt, encrypt, generateKey, importKey } from "~~/utils/crypto";
+import { encrypt, generateKey } from "~~/utils/crypto";
 import { fileToArrayBuffer } from "~~/utils/file";
-import { fetchFromIPFS, pinCryptMetadataToIPFS, pinFileToIPFS } from "~~/utils/ipfs";
-import { retrieveSecretBlob } from "~~/utils/nillion/retrieveSecretBlob";
+import { pinCryptMetadataToIPFS, pinFileToIPFS } from "~~/utils/ipfs";
 import { storeSecretsBlob } from "~~/utils/nillion/storeSecretsBlob";
 import { cn } from "~~/utils/ui";
 import { wait } from "~~/utils/wait";
@@ -28,6 +28,10 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
   const [sealCryptProgress, setSealCryptProgress] = useState<number>(0);
 
   const { data: cryptManagerData, isLoading } = useDeployedContractInfo("CryptManager");
+  const { switchNetwork } = useSwitchNetwork({
+    chainId: 11155111,
+  });
+  const { chain } = useNetwork();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -154,31 +158,6 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
       const cryptCreatedLog = receipt.logs.find(log => log.topics[0] === encodedEventTopic);
       const cryptId = hexToBigInt(cryptCreatedLog?.topics[1] || "0x0");
       console.log("Crypt created", cryptId);
-
-      //// TESTS
-
-      // test retrieve secret key from Nillion
-      const base64RetrievedKey = await retrieveSecretBlob(nillionClient, nillionStoreId, nillionSecretName);
-      const importedKey = await importKey(base64RetrievedKey);
-      console.log("Retrieved key from Nillion", { base64RetrievedKey, importedKey });
-
-      // test fetch metadata
-      const metadata = await (await fetchFromIPFS(pinnedMetadataIpfs.IpfsHash)).json();
-      console.log("Fetched crypt metadata:", metadata);
-      const fetchedEncryptedFile = await fetchFromIPFS(metadata.fileIpfsCid);
-      const fetchedEncryptedFileBuffer = await fetchedEncryptedFile.arrayBuffer();
-
-      // test decrypt file
-      const { decrypted, utf8Decrypted } = await decrypt(
-        importedKey,
-        Buffer.from(metadata.iv, "base64"),
-        fetchedEncryptedFileBuffer,
-      );
-      console.log("Decrypted file", {
-        decrypted,
-        utf8Decrypted,
-      });
-
       setSealCryptStatus("success");
     } catch (e) {
       console.error(e);
@@ -210,7 +189,11 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
         <Label htmlFor="trigger">/ward_trigger</Label>
         <Textarea id="trigger" onChange={handleTriggerTextChange} />
       </div>
-      {sealCryptStatus === "pending" ? (
+      {chain?.id !== 11155111 ? (
+        <Button variant="ghost" onClick={() => switchNetwork?.()}>
+          Switch network
+        </Button>
+      ) : sealCryptStatus === "pending" ? (
         <Progress className={cn("h-10")} value={sealCryptProgress}>
           <span className="text-white">sealing crypt...</span>
         </Progress>
