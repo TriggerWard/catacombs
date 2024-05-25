@@ -5,4 +5,5 @@ import "@uma/core/contracts/optimistic-oracle-v3/interfaces/OptimisticOracleV3In
 
 interface ExtendedOptimisticOracleV3Interface is OptimisticOracleV3Interface {
     function defaultCurrency() external view returns (address);
+    function defaultLiveness() external view returns (uint64);
 }
