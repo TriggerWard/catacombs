@@ -4,23 +4,55 @@ import {
   Hash,
   Transaction,
   TransactionReceipt,
+  createClient,
   createTestClient,
+  defineChain,
+  http,
   publicActions,
   walletActions,
   webSocket,
 } from "viem";
-import { hardhat } from "viem/chains";
+import { Chain, hardhat, mainnet } from "viem/chains";
 import { decodeTransactionData } from "~~/utils/scaffold-eth";
 
 const BLOCKS_PER_PAGE = 20;
 
-export const testClient = createTestClient({
-  chain: hardhat,
-  mode: "hardhat",
-  transport: webSocket("ws://127.0.0.1:8545"),
-})
-  .extend(publicActions)
-  .extend(walletActions);
+const isDev = process.env.NEXT_PUBLIC_DEV;
+
+const nillionChain = defineChain({
+  id: 22255222,
+  network: "yolo",
+  name: "Nillion Devnet",
+  nativeCurrency: {
+    decimals: 18,
+    name: "Nillion",
+    symbol: "NIL",
+  },
+  testnet: true,
+  rpcUrls: {
+    default: {
+      http: ["https://rpc-endpoint.testnet-nucleus.nilogy.xyz"],
+    },
+    public: {
+      http: ["https://rpc-endpoint.testnet-nucleus.nilogy.xyz"],
+    },
+  },
+});
+
+export const chainClient = isDev
+  ? createTestClient({
+      chain: hardhat,
+      mode: "hardhat",
+      transport: webSocket("ws://127.0.0.1:8545"),
+    })
+      .extend(publicActions)
+      .extend(walletActions)
+  : createClient({
+      chain: nillionChain,
+      transport: http(),
+    })
+      .extend(publicActions)
+      .extend(walletActions);
 
 export const useFetchBlocks = () => {
   const [blocks, setBlocks] = useState<Block[]>([]);
@@ -35,7 +67,7 @@ export const useFetchBlocks = () => {
     setError(null);
 
     try {
-      const blockNumber = await testClient.getBlockNumber();
+      const blockNumber = await chainClient.getBlockNumber();
       setTotalBlocks(blockNumber);
 
       const startingBlock = blockNumber - BigInt(currentPage * BLOCKS_PER_PAGE);
@@ -46,7 +78,7 @@ export const useFetchBlocks = () => {
 
       const blocksWithTransactions = blockNumbersToFetch.map(async blockNumber => {
         try {
-          return testClient.getBlock({ blockNumber, includeTransactions: true });
+          return chainClient.getBlock({ blockNumber, includeTransactions: true });
         } catch (err) {
           setError(err instanceof Error ? err : new Error("An error occurred."));
           throw err;
@@ -62,7 +94,7 @@ export const useFetchBlocks = () => {
         fetchedBlocks.flatMap(block =>
           block.transactions.map(async tx => {
             try {
-              const receipt = await testClient.getTransactionReceipt({ hash: (tx as Transaction).hash });
+              const receipt = await chainClient.getTransactionReceipt({ hash: (tx as Transaction).hash });
               return { [(tx as Transaction).hash]: receipt };
             } catch (err) {
               setError(err instanceof Error ? err : new Error("An error occurred."));
@@ -89,7 +121,7 @@ export const useFetchBlocks = () => {
         if (currentPage === 0) {
           if (newBlock.transactions.length > 0) {
             const transactionsDetails = await Promise.all(
-              newBlock.transactions.map((txHash: string) => testClient.getTransaction({ hash: txHash as Hash })),
+              newBlock.transactions.map((txHash: string) => chainClient.getTransaction({ hash: txHash as Hash })),
             );
             newBlock.transactions = transactionsDetails;
           }
@@ -99,7 +131,7 @@ export const useFetchBlocks = () => {
           const receipts = await Promise.all(
             newBlock.transactions.map(async (tx: Transaction) => {
               try {
-                const receipt = await testClient.getTransactionReceipt({ hash: (tx as Transaction).hash });
+                const receipt = await chainClient.getTransactionReceipt({ hash: (tx as Transaction).hash });
                 return { [(tx as Transaction).hash]: receipt };
               } catch (err) {
                 setError(err instanceof Error ? err : new Error("An error occurred fetching receipt."));
@@ -119,7 +151,7 @@ export const useFetchBlocks = () => {
       }
     };
 
-    return testClient.watchBlocks({ onBlock: handleNewBlock, includeTransactions: true });
+    return chainClient.watchBlocks({ onBlock: handleNewBlock, includeTransactions: true });
   }, [currentPage]);
 
   return {

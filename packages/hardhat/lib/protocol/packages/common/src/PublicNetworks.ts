@@ -79,6 +79,13 @@ export const PublicNetworks: PublicNetworksType = {
   421611: { name: "arbitrum-rinkeby", etherscan: "https://testnet.arbiscan.io/" },
 };
 
+const nillionChainId = process.env.NEXT_PUBLIC_NILLION_CHAIN_ID;
+const nillionChainName = process.env.NEXT_PUBLIC_NILLION_NAME;
+
+if (nillionChainId && nillionChainName) {
+  PublicNetworks[parseInt(nillionChainId)] = { name: nillionChainName, etherscan: "" };
+}
+
 export function isPublicNetwork(name: string): boolean {
   return Object.values(PublicNetworks).some((network) => name.startsWith(network.name));
 }
