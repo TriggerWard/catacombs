@@ -40,7 +40,7 @@ contract Cryptmanager is CommonOptimisticOracleV3Test {
         assertTrue(keccak256(crypt.decryptTrigger) == keccak256(decryptTrigger), "decryptTrigger should be equal");
         assertTrue(compareStrings(crypt.nillionCrypt, nillionCrypt), "nillionCrypt should be equal");
         assertTrue(crypt.decryptCallback == decryptCallback, "decryptCallback should be equal");
-        assertTrue(crypt.cryptOwner == TestAddress.account1, "cryptOwner should be equal");
+        assertTrue(crypt.owner == TestAddress.account1, "owner should be equal");
         assertTrue(crypt.isFinalized == false, "isFinalized should be false");
         assertTrue(crypt.assertionId == bytes32(0), "assertionId should be 0");
     }
@@ -172,6 +172,38 @@ contract Cryptmanager is CommonOptimisticOracleV3Test {
         timer.setCurrentTime(timer.getCurrentTime() + optimisticOracleV3.defaultLiveness() + 1);
         assertTrue(optimisticOracleV3.settleAndGetAssertionResult(crypt.assertionId), "Settlement should succeed");
         assertTrue(testDecryptCallback.wasCalled() == true, "Callback should be called");
+    }
+
+    function test_DeleteCrypt() public {
+        // Create a crypt to test deletion.
+        vm.startPrank(TestAddress.account1);
+        uint256 cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+        vm.stopPrank();
+
+        // Attempt to delete the crypt by a non-owner, should revert
+        vm.prank(TestAddress.account2);
+        vm.expectRevert("Only the crypt owner can delete the crypt");
+        cryptManager.deleteCrypt(cryptId);
+
+        // Can not delete crypt if there is a pending decrypt.
+        defaultCurrency.allocateTo(TestAddress.account2, minimumBond); // Setup currency and approve bond to initiate decrypt.
+        vm.startPrank(TestAddress.account2);
+        defaultCurrency.approve(address(cryptManager), minimumBond);
+        cryptManager.initiateDecrypt(cryptId);
+        vm.stopPrank();
+        vm.prank(TestAddress.account1);
+        vm.expectRevert("Cannot delete a crypt with a pending assertion");
+        cryptManager.deleteCrypt(cryptId);
+
+        // Make a new crypt and then try delete it (previous one is in pending state).
+        vm.startPrank(TestAddress.account1);
+        cryptId = cryptManager.createCrypt(ipfsDataHash, decryptTrigger, nillionCrypt, address(0));
+        cryptManager.deleteCrypt(cryptId);
+        vm.stopPrank();
+
+        // Attempt to access the deleted crypt, should revert
+        vm.expectRevert("Crypt ID does not exist");
+        cryptManager.getCrypt(cryptId);
     }
 
     function compareStrings(string memory a, string memory b) public pure returns (bool) {

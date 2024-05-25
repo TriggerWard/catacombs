@@ -17,7 +17,7 @@ contract CryptManager is Test {
         bytes decryptTrigger;
         string nillionCrypt;
         address decryptCallback;
-        address cryptOwner;
+        address owner;
         bytes32 assertionId;
         bool isFinalized;
     }
@@ -31,7 +31,7 @@ contract CryptManager is Test {
         string ipfsDataHash,
         string nillionCrypt,
         address decryptCallback,
-        address indexed cryptOwner
+        address indexed owner
     );
 
     event DecryptInitiated(uint256 indexed cryptId, bytes decryptTrigger);
@@ -45,7 +45,7 @@ contract CryptManager is Test {
     }
 
     function getCrypt(uint256 cryptId) public view returns (Crypt memory) {
-        require(cryptId < crypts.length, "Crypt ID does not exist");
+        require(crypts[cryptId].owner != address(0), "Crypt ID does not exist");
         return crypts[cryptId];
     }
 
@@ -60,7 +60,7 @@ contract CryptManager is Test {
             decryptTrigger: decryptTrigger,
             nillionCrypt: nillionCrypt,
             decryptCallback: decryptCallback,
-            cryptOwner: msg.sender,
+            owner: msg.sender,
             assertionId: bytes32(0),
             isFinalized: false
         });
@@ -133,7 +133,11 @@ contract CryptManager is Test {
     }
 
     function deleteCrypt(uint256 cryptId) public {
-        require(cryptId < crypts.length, "Crypt ID does not exist"); // Check crypt exists.
+        require(cryptId < crypts.length, "Crypt ID does not exist");
+        require(crypts[cryptId].owner == msg.sender, "Only the crypt owner can delete the crypt");
+        require(!crypts[cryptId].isFinalized, "Cannot delete a finalized crypt");
+        require(crypts[cryptId].assertionId == bytes32(0), "Cannot delete a crypt with a pending assertion");
+
         delete crypts[cryptId];
     }
 }
