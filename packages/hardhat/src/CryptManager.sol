@@ -49,7 +49,7 @@ contract CryptManager {
     error OnlyOracle(address caller);
     error OnlyOwner(uint256 cryptId, address caller);
     error OnlyWarden(uint256 cryptId, address caller);
-    
+
     constructor(address _optimisticOracle, uint64 _optimisticOracleLiveness) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
         optimisticOracleLiveness = _optimisticOracleLiveness;
@@ -60,9 +60,8 @@ contract CryptManager {
     }
 
     function getCrypt(uint256 cryptId) public view returns (Crypt memory) {
-        if (crypts[cryptId].owner == address(0)) {
-            revert CryptIdNotFound(cryptId);
-        }
+        if (crypts[cryptId].owner == address(0)) revert CryptIdNotFound(cryptId);
+
         return crypts[cryptId];
     }
 
@@ -91,17 +90,10 @@ contract CryptManager {
     }
 
     function initiateDecrypt(uint256 cryptId) public {
-        if (cryptId > crypts.length) {
-            revert CryptIdNotFound(cryptId);
-        }
+        if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
         Crypt storage crypt = crypts[cryptId];
-
-        if (crypt.isFinalized) {
-            revert CryptAlreadyFinalized(cryptId);
-        }
-        if(crypt.assertionId != bytes32(0)) {
-            revert CryptAlreadyDecrypting(cryptId);
-        }
+        if (crypt.isFinalized) revert CryptAlreadyFinalized(cryptId);
+        if (crypt.assertionId != bytes32(0)) revert CryptAlreadyDecrypting(cryptId);
 
         // Pull OO bonds. Caller must first approve minimum bond amount of default currency.
         IERC20 bondCurrency = IERC20(optimisticOracle.defaultCurrency());
@@ -138,9 +130,8 @@ contract CryptManager {
     }
 
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) public {
-        if (msg.sender != address(optimisticOracle)) {
-            revert OnlyOracle(msg.sender);
-        }
+        if (msg.sender != address(optimisticOracle)) revert OnlyOracle(msg.sender);
+
         // If the assertion was true, then the data assertion is resolved.
         uint256 cryptId = assertionIdToCryptId[assertionId];
         if (assertedTruthfully) {
@@ -161,36 +152,23 @@ contract CryptManager {
     }
 
     function deleteCrypt(uint256 cryptId) public {
-        if (cryptId > crypts.length) 
-            revert CryptIdNotFound(cryptId);
+        if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
 
         Crypt storage crypt = crypts[cryptId];
-
-        if (crypt.owner != msg.sender) 
-            revert OnlyOwner(cryptId, msg.sender);
-
-        if (crypt.isFinalized) 
-            revert CryptAlreadyFinalized(cryptId);
-
-        if (crypts[cryptId].assertionId != bytes32(0)) 
-            revert CryptAlreadyDecrypting(cryptId);
+        if (crypt.owner != msg.sender) revert OnlyOwner(cryptId, msg.sender);
+        if (crypt.isFinalized) revert CryptAlreadyFinalized(cryptId);
+        if (crypts[cryptId].assertionId != bytes32(0)) revert CryptAlreadyDecrypting(cryptId);
 
         delete crypts[cryptId];
         emit CryptDeleted(cryptId);
     }
 
     function setDecryptionKey(uint256 cryptId, string memory decryptionKey) public {
-        if (cryptId > crypts.length) 
-            revert CryptIdNotFound(cryptId);
-        
-        Crypt storage crypt = crypts[cryptId];
-        if (msg.sender != crypt.warden) {
-            revert OnlyWarden(cryptId, msg.sender);
-        }
+        if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
 
-        if (!crypt.isFinalized) {
-            revert CryptNotFinalized(cryptId);
-        }
+        Crypt storage crypt = crypts[cryptId];
+        if (msg.sender != crypt.warden) revert OnlyWarden(cryptId, msg.sender);
+        if (!crypt.isFinalized) revert CryptNotFinalized(cryptId);
 
         crypt.decryptionKey = decryptionKey;
         emit DecryptionKeySet(cryptId, decryptionKey);
