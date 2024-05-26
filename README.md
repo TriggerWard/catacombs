@@ -3,7 +3,7 @@
 Programmable, encrypted & triggerable data vault, an _encrypted data dead man's switch_. Upload and encrypt any file anonymously and have a natural language "trigger" initiate when to decrypt and publicly release this data.
 
 <p align="center">
-  <img alt="TriggerWard Logo" src="https://i.imgur.com/LzQYbkF.png" width="300">
+  <img alt="TriggerWard Logo" src="https://i.imgur.com/wAN1bMh.jpeg" width="300">
 </p>
 
 ## Table of Contents
