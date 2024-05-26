@@ -1,6 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.16;
 
+/// @title DecryptCallback
+/// @author TriggerWard
+/// @notice This allows contracts to be informed when a ward has been triggered on a crypt.
 contract DecryptCallback {
     address public cryptManagerAddress;
     uint256 public cryptId;
@@ -15,10 +18,11 @@ contract DecryptCallback {
         cryptId = _cryptId;
     }
 
+    // TODO: Consider if this should have a revert which could be blocking if not set up.
+    /// @notice This allows the crypt manager to inform the contract that the crypt's ward has been triggered.
+    /// @param cryptId The ID of the WardTriggered Crypt.
     function cryptDecryptCallback(uint256 _cryptId) public virtual {
-        // require(msg.sender == cryptManagerAddress, "Only CryptManager can call this function");
         if (msg.sender != cryptManagerAddress) revert OnlyCryptManager(_cryptId, msg.sender);
-        // require(_cryptId == cryptId, "CryptId does not match");
         if (_cryptId != cryptId) revert CryptIdMismatch(cryptId, _cryptId);
         // Do something
         emit CryptDecryptCallback(cryptId);

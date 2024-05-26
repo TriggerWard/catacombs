@@ -8,6 +8,9 @@ import "./interfaces/DecryptCallbackInterface.sol";
 
 import "@uma/core/contracts/optimistic-oracle-v3/implementation/ClaimData.sol";
 
+/// @title CryptManager
+/// @author TriggerWard
+/// @notice Facilitates all crypt actions
 contract CryptManager {
     struct Crypt {
         string ipfsDataHash;
@@ -46,7 +49,7 @@ contract CryptManager {
     error CryptNotFinalized(uint256 cryptId);
     error CryptAlreadyDecrypting(uint256 cryptId);
 
-    error OnlyOracle(address caller);
+    error MustBeOracle();
     error OnlyOwner(uint256 cryptId, address caller);
     error OnlyWarden(uint256 cryptId, address caller);
 
@@ -55,23 +58,36 @@ contract CryptManager {
         optimisticOracleLiveness = _optimisticOracleLiveness;
     }
 
+    // TODO: consider longevity & gas
+    /// @notice Fetches all registered crypts
+    /// @return Crypts An array containing all crypts ever registered.
     function getCrypts() public view returns (Crypt[] memory) {
         return crypts;
     }
 
+    /// @notice Retrieves a crypt by it's registered ID.
+    /// @param amount The ID of crypt being retrieved.
+    /// @return Crypt A struct containing the state & details of the crypt.
     function getCrypt(uint256 cryptId) public view returns (Crypt memory) {
         if (crypts[cryptId].owner == address(0)) revert CryptIdNotFound(cryptId);
 
         return crypts[cryptId];
     }
 
+    /// @notice Allows a user to create a crypt.
+    /// @param ipfsDataHash The IPFS hash of the encrypted data being sealed in the crypt.
+    /// @param decryptTrigger A bytes encoded string of the natural language statement, which, if proven, triggers the ward to open.
+    /// @param nillionCrypt The identifier of the crypto in the Nillion catacombs.
+    /// @param warden The address of the warden enlisted to oversee the crypt.
+    /// @param decryptCallback The address of an arbitrary external contract to inform that the ward has been triggered.
+    /// @return CryptId A unique identifier of the newly created crypt.
     function createCrypt(
         string memory ipfsDataHash,
         bytes memory decryptTrigger,
         string memory nillionCrypt,
         address warden,
         address decryptCallback
-    ) public returns (uint256) {
+    ) external returns (uint256) {
         Crypt memory newCrypt = Crypt({
             ipfsDataHash: ipfsDataHash,
             decryptTrigger: decryptTrigger,
@@ -89,7 +105,9 @@ contract CryptManager {
         return cryptId;
     }
 
-    function initiateDecrypt(uint256 cryptId) public {
+    /// @notice This allows a user to stake a claim that the ward of the crypt has been triggered.
+    /// @param cryptId The crypts unique identifier.
+    function initiateDecrypt(uint256 cryptId) external {
         if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
         Crypt storage crypt = crypts[cryptId];
         if (crypt.isFinalized) revert CryptAlreadyFinalized(cryptId);
@@ -129,8 +147,10 @@ contract CryptManager {
         emit DecryptInitiated(cryptId, crypt.decryptTrigger);
     }
 
+    /// @notice This allows the optimistic oracle to confirm if the ward has been triggered.
+    /// @param assertionId The ID of the assertion the oracle is currently foreseeing the truthfullness of.
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) public {
-        if (msg.sender != address(optimisticOracle)) revert OnlyOracle(msg.sender);
+        if (msg.sender != address(optimisticOracle)) revert MustBeOracle();
 
         // If the assertion was true, then the data assertion is resolved.
         uint256 cryptId = assertionIdToCryptId[assertionId];
@@ -146,12 +166,18 @@ contract CryptManager {
         emit DecryptFinalized(cryptId, assertedTruthfully);
     }
 
+    /// @notice This allows the optimistic oracle to dismiss assertions that are deemed false
+    /// @param assertionId The ID of the assertion the oracle was requested to prophesize.
     function assertionDisputedCallback(bytes32 assertionId) public {
+        if (msg.sender != address(optimisticOracle)) revert MustBeOracle();
+
         crypts[assertionIdToCryptId[assertionId]].assertionId = bytes32(0);
         assertionIdToCryptId[assertionId] = 0;
     }
 
-    function deleteCrypt(uint256 cryptId) public {
+    /// @notice This allows the owner to unseal their crypt and remove it from the catacombs.
+    /// @param cryptId The ID of the crypt being exhumed.
+    function deleteCrypt(uint256 cryptId) external {
         if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
 
         Crypt storage crypt = crypts[cryptId];
@@ -163,6 +189,8 @@ contract CryptManager {
         emit CryptDeleted(cryptId);
     }
 
+    /// @notice This allows the warden to unseal a crypt and leave the keys in the door.
+    /// @param cryptId The ID of the unsealed crypt.
     function setDecryptionKey(uint256 cryptId, string memory decryptionKey) public {
         if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
 
