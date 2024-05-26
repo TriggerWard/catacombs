@@ -1,4 +1,6 @@
-# 🔓 Trigger Ward
+# 🔓 Trigger Warding
+
+[![Watch the video](https://img.youtube.com/vi/zcGWx-eQCB0/maxresdefault.jpg)](https://youtu.be/zcGWx-eQCB0)
 
 Programmable, encrypted & triggerable data vault, an _encrypted data dead man's switch_. Upload and encrypt any file anonymously and have a natural language "trigger" initiate when to decrypt and publicly release this data.
 
