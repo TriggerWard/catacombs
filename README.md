@@ -31,8 +31,9 @@ Programmable, encrypted & triggerable data vault, an _encrypted data dead man's 
 
 | Package Name                                                                        | Description                                                     |
 | ----------------------------------------------------------------------------------- | --------------------------------------------------------------- |
-| [hardhat](https://github.com/TriggerWard/catacombs/tree/main/packages/contracts)    | Smart contracts and configurations for blockchain interactions. |
-| [nextjs](https://github.com/TriggerWard/catacombs/tree/main/packages/ui)            | Frontend for interacting with contracts and nillion.            |
+| [contracts](https://github.com/TriggerWard/catacombs/tree/main/packages/contracts)    | Smart contracts and configurations for blockchain interactions. |
+| [ui](https://github.com/TriggerWard/catacombs/tree/main/packages/ui)            | Frontend for interacting with contracts and nillion.            |
+| [warden](https://github.com/TriggerWard/catacombs/tree/main/packages/warden)            | Client that can run by the warden to automatically execute their role.            |
 | [nillion](https://github.com/TriggerWard/catacombs/tree/main/packages/ui/contracts) | Nillion Nada contracts and scripts for booting Nillion locally. |
 
 ## Example Use cases
