@@ -72,7 +72,7 @@ const ViewCrypt: NextPage = () => {
           </h1>
 
           {connectedAddress && !connectedToSnap && (
-            <Button className="mt-4" onClick={handleConnectToSnap}>
+            <Button className="mt-4" variant="ghost" onClick={handleConnectToSnap}>
               Connect to Snap with your Nillion User Key
             </Button>
           )}
