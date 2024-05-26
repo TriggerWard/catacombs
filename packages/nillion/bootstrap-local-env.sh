@@ -17,8 +17,8 @@ OUTFILE=$(mktemp);
 PIDFILE=$(mktemp);
 
 "$NILLION_DEVNET" --seed scaffold-nillion >"$OUTFILE" & echo $! >"$PIDFILE";
-NEXTJS_ENV=".env ../nextjs/.env"
-HARDHAT_ENV=".env ../hardhat/.env"
+NEXTJS_ENV=".env ../ui/.env"
+HARDHAT_ENV=".env ../contracts/.env"
 echo "--------------------"
 echo "Updating your .env files with nillion-devnet environment info... This may take a minute."
 echo "--------------------"
@@ -115,7 +115,7 @@ done
 
 echo "🔑 Node key and user keys have been generated and added to .env"
 
-# Add environment variables to NextJs .env
+# Add environment variables to UI .env
 update_env "NEXT_PUBLIC_NILLION_WEBSOCKETS" "$WEBSOCKET" $NEXTJS_ENV
 update_env "NEXT_PUBLIC_NILLION_CLUSTER_ID" "$CLUSTER_ID" $NEXTJS_ENV
 update_env "NEXT_PUBLIC_NILLION_BLOCKCHAIN_RPC_ENDPOINT" "$PAYMENTS_RPC" $NEXTJS_ENV
@@ -125,7 +125,7 @@ update_env "NEXT_PUBLIC_NILLION_CHAIN_ID" "$PAYMENTS_CHAIN" $NEXTJS_ENV
 update_env "NEXT_PUBLIC_NILLION_WALLET_PRIVATE_KEY" "$WALLET_PRIVATE_KEY" $NEXTJS_ENV
 update_env "NEXT_PUBLIC_NILLION_BOOTNODE_MULTIADDRESS" "$BOOT_MULTIADDR" $NEXTJS_ENV
 
-# Add environment variables to Hardhat .env
+# Add environment variables to Contracts .env
 update_env "NILLION_CONFIG_RPC_URL" "$PAYMENTS_RPC" $HARDHAT_ENV
 update_env "NILLION_CONFIG_DEPLOYER_PRIVATE_KEY" "$WALLET_PRIVATE_KEY" $HARDHAT_ENV
 update_env "NILLION_CONFIG_CHAIN_ID" "$PAYMENTS_CHAIN" $HARDHAT_ENV

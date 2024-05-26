@@ -2,7 +2,7 @@ import { nillionConfig } from "./nillionConfig";
 
 export async function storeProgram(nillionClient: any, programName: string): Promise<string> {
   try {
-    // put any compiled nada program in the public folder of this repo `packages/nextjs/public/programs`
+    // put any compiled nada program in the public folder of this repo `packages/ui/public/programs`
     const compiledProgram = await fetch(`/programs/${programName}.nada.bin`);
 
     // transform the nada.bin into Uint8Array

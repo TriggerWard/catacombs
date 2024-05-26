@@ -139,7 +139,7 @@ const Home: NextPage = () => {
             <p className="text-center text-lg">
               Check out this completed code in{" "}
               <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-                packages/nextjs/app/nillion-hello-world-complete/page.tsx
+                packages/ui/app/nillion-hello-world-complete/page.tsx
               </code>
             </p>
 

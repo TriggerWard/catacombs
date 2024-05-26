@@ -1,21 +1,21 @@
 {
-    "name": "@se-2/warden",
-    "version": "0.0.1",
-    "type": "module",
-    "dependencies": {
-        "@types/jsdom": "^21.1.6",
-        "dotenv": "^16.0.3",
-        "ethers": "^6.10.0",
-        "jsdom": "^24.0.0",
-        "node-self": "^1.0.2"
-    },
-    "devDependencies": {
-        "@typechain/ethers-v6": "^0.5.1",
-        "@types/eventsource": "^1.1.15",
-        "@types/ws": "^8.5.10",
-        "prettier": "^2.8.4",
-        "ts-node": "^10.9.1",
-        "typechain": "^8.1.0",
-        "typescript": "^5.1.6"
-    }
+  "name": "@catacombs/warden",
+  "version": "0.0.1",
+  "type": "module",
+  "dependencies": {
+    "@types/jsdom": "^21.1.6",
+    "dotenv": "^16.0.3",
+    "ethers": "^6.10.0",
+    "jsdom": "^24.0.0",
+    "node-self": "^1.0.2"
+  },
+  "devDependencies": {
+    "@typechain/ethers-v6": "^0.5.1",
+    "@types/eventsource": "^1.1.15",
+    "@types/ws": "^8.5.10",
+    "prettier": "^2.8.4",
+    "ts-node": "^10.9.1",
+    "typechain": "^8.1.0",
+    "typescript": "^5.1.6"
+  }
 }

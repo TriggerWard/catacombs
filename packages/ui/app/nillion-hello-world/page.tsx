@@ -118,14 +118,14 @@ const Home: NextPage = () => {
             <p className="text-center text-lg">
               Get started by editing{" "}
               <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-                packages/nextjs/app/nillion-hello-world/page.tsx
+                packages/ui/app/nillion-hello-world/page.tsx
               </code>
             </p>
 
             <p className="text-center text-lg">
               Need a hint on how to get something working? Take a look at the completed{" "}
               <code className="italic bg-base-300 text-base font-bold max-w-full break-words break-all inline-block">
-                packages/nextjs/app/nillion-hello-world-complete/page.tsx
+                packages/ui/app/nillion-hello-world-complete/page.tsx
               </code>
             </p>
 
