@@ -131,6 +131,18 @@ contract WardenManager {
         emit WardenSlashed(warden, assertionId, msg.sender);
     }
 
+    /// @notice This is the slash that ultimately puninishes the warden.
+    /// @param warden The address of the guilty warden.
+    /// @param token The address of token being token from the warden.
+    function executeSlash(address warden, IERC20 token) external {
+        if (!wardens[warden].isSlashed) revert WardenNotSlashed(warden);
+        uint256 amount = wardens[warden].stakedBalances[token];
+        wardens[warden].stakersToStakedBalances[msg.sender][token] = 0;
+        token.transfer(0x000000000000000000000000000000000000dEaD, amount);
+        wardens[warden].stakedBalances[token] = 0;
+        emit SlashExecuted(warden, token, amount, msg.sender);
+    }
+
     /// @notice This callback is for the optimistic oracle to inform the manager of assertions.
     /// @param assertionId The id of the assertion the oracle is updating.
     /// @param assertedTruthfully The outcome of the assertion.
@@ -146,19 +158,6 @@ contract WardenManager {
         }
         emit AssertionResolved(assertionId, assertedTruthfully, msg.sender);
     }
-
-    /// @notice This is the slash that ultimately puninishes the warden.
-    /// @param warden The address of the guilty warden.
-    /// @param token The address of token being token from the warden.
-    function executeSlash(address warden, IERC20 token) external {
-        if (!wardens[warden].isSlashed) revert WardenNotSlashed(warden);
-        uint256 amount = wardens[warden].stakedBalances[token];
-        wardens[warden].stakersToStakedBalances[msg.sender][token] = 0;
-        token.transfer(0x000000000000000000000000000000000000dEaD, amount);
-        wardens[warden].stakedBalances[token] = 0;
-        emit SlashExecuted(warden, token, amount, msg.sender);
-    }
-
 
     // TODO: Confirm if this needs any guards
     /// @notice This is a callback for the optimistic oracle to nullify an assertion.
