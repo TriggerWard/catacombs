@@ -19,8 +19,8 @@ Programmable, encrypted & triggerable data vault, an _encrypted data dead man's 
 
 ## Resources
 
-- [Website]()
-- [Trailer]()
+- [Website](https://www.triggerward.com/)
+- [Trailer](https://drive.google.com/file/d/1hvGQQaSQL-93Q4bWKV9M1MofQk88g2W_/view?usp=sharing)
 - [Slide deck](https://docs.google.com/presentation/d/1adw9RYKSA2tFIGB2o20b8VLcRf03WnChIUGVpMuJw5c/edit?usp=sharing)
 - [Figma](https://www.figma.com/design/D0axqXznF11H0TNVgJU5cq/trigger-ward?node-id=0-1&t=zMOA3LuO4GU0Kkm9-1)
 - Deployed Contracts (Sepolia):
