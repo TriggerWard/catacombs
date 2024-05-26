@@ -24,8 +24,8 @@ Programmable, encrypted & triggerable data vault, an _encrypted data dead man's 
 - [Slide deck](https://docs.google.com/presentation/d/1adw9RYKSA2tFIGB2o20b8VLcRf03WnChIUGVpMuJw5c/edit?usp=sharing)
 - [Figma](https://www.figma.com/design/D0axqXznF11H0TNVgJU5cq/trigger-ward?node-id=0-1&t=zMOA3LuO4GU0Kkm9-1)
 - Deployed Contracts (Sepolia):
-  - `CryptManager`: [0xFIll]()
-  - `WardenManager`: [0xFill]()
+  - `CryptManager`: [0x27639764f1e1ac3124913f366fB827de7e457EC7](https://sepolia.etherscan.io/address/0x27639764f1e1ac3124913f366fb827de7e457ec7)
+  - `WardenManager`: [0x6625F9ca44ecA82C9A2b61caB58FBfACd24fF1C2](https://sepolia.etherscan.io/address/0x6625F9ca44ecA82C9A2b61caB58FBfACd24fF1C2)
 
 ## Repo Structure
 

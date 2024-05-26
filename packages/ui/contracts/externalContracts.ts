@@ -1172,7 +1172,7 @@ const externalContracts = {
       ],
     },
     CryptManager: {
-      address: "0xACA5ccFa48A5A4A6396efB6F104A5eb04eE43528",
+      address: "0x27639764f1e1ac3124913f366fB827de7e457EC7",
       abi: [
         {
           inputs: [
