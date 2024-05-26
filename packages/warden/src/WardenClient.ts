@@ -111,13 +111,12 @@ async function main() {
   );
 }
 
-// TODO: Ensure NEXT_PUBLIC_NILLION_WALLET_PRIVATE_KEY does not have 0x prefix
 export const retrieveSecretCommand = (
   user_key: any,
   store_id: any,
   secret_name: any
 ) => `nillion --user-key ${user_key} \
-  --node-key ${process.env.NEXT_PUBLIC_NILLION_NODEKEY_TEXT_PARTY_1} \
+  --node-key-seed ${process.env.NEXT_PUBLIC_NILLION_NODEKEY_SEED} \
   -b ${process.env.NEXT_PUBLIC_NILLION_BOOTNODE_MULTIADDRESS} \
   --payments-private-key ${process.env.NEXT_PUBLIC_NILLION_WALLET_PRIVATE_KEY} \ 
   --payments-chain-id ${process.env.NEXT_PUBLIC_NILLION_CHAIN_ID} \
