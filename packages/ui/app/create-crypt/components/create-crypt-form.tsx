@@ -49,6 +49,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
   const [fileUploadProgress, setFileUploadProgress] = useState<number>(0);
 
   const [sealCryptStatus, setSealCryptStatus] = useState<Status>("idle");
+  const [sealCryptStatusText, setSealCryptStatusText] = useState<string>("");
   const [sealCryptProgress, setSealCryptProgress] = useState<number>(0);
 
   const { data: cryptManagerData, isLoading } = useDeployedContractInfo("CryptManager");
@@ -87,22 +88,26 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
       const fileAsArrayBuffer = await fileToArrayBuffer(file);
 
       // Generate key
+      setSealCryptStatusText("Generating key...");
       const { iv, key, exportedKey, base64ExportedKey } = await generateKey();
       console.log("Generated key", { iv, key, exportedKey, base64ExportedKey });
       setSealCryptProgress(10);
 
       // Encrypt file
+      setSealCryptStatusText("Encrypting file...");
       const { base64Encrypted, encrypted } = await encrypt(key, iv, fileAsArrayBuffer);
       console.log("Encrypted file", { base64Encrypted, encrypted });
       setSealCryptProgress(40);
 
       // Store encrypted file on IPFS
+      setSealCryptStatusText("Uploading encrypted file to IPFS...");
       const cryptFileName = "crypt-file_" + Date.now();
       const pinnedFileIpfs = await pinFileToIPFS(encrypted, cryptFileName);
       console.log("Pinned encrypted file: ", pinnedFileIpfs.IpfsHash);
       setSealCryptProgress(50);
 
       // Store metadata on IPFS
+      setSealCryptStatusText("Uploading crypt metadata to IPFS...");
       const pinnedMetadataIpfs = await pinCryptMetadataToIPFS(
         {
           fileIpfsCid: pinnedFileIpfs.IpfsHash,
@@ -117,6 +122,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
       setSealCryptProgress(60);
 
       // Store secret key on Nillion
+      setSealCryptStatusText("Storing secret key on nillion...");
       const nillionSecretName = `crypt_key_${pinnedMetadataIpfs.IpfsHash}`;
       const nillionStoreId = await storeSecretsBlob(
         nillion,
@@ -133,6 +139,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
       setSealCryptProgress(80);
 
       // Call CryptManager.sol
+      setSealCryptStatusText("Creating crypt on Ethereum...");
       const { request } = await prepareWriteContract({
         address: cryptManagerData.address,
         abi: [
@@ -243,7 +250,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
         </Button>
       ) : sealCryptStatus === "pending" ? (
         <Progress className={cn("h-10")} value={sealCryptProgress}>
-          <span className="text-white">sealing crypt...</span>
+          <span className="text-white">{sealCryptStatusText || "sealing crypt..."}</span>
         </Progress>
       ) : (
         <Button variant="outline" className="w-full h-10" onClick={handleCreateCrypt} disabled={!canCryptBeSealed}>
