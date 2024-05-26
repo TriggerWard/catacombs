@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Link from "next/link";
 import { SelectWarden, Warden } from "./select-warden";
 import { prepareWriteContract, waitForTransaction, writeContract } from "@wagmi/core";
 import { encodeEventTopics, hexToBigInt, toHex, zeroAddress } from "viem";
@@ -31,10 +32,18 @@ const WARDENS = [
   },
 ];
 
+const asciiArt = `
+      .--.
+     /.-. '----------.
+     \'-' .--"--""-"-'
+      '--'
+`;
+
 export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nillionClient: any }) {
   const [file, setFile] = useState<File | null>(null);
   const [triggerText, setTriggerText] = useState<string>("");
   const [warden, setWarden] = useState<Warden>();
+  const [createdCryptId, setCreatedCryptId] = useState<string | null>(null);
 
   const [fileUploadStatus, setFileUploadStatus] = useState<Status>("idle");
   const [fileUploadProgress, setFileUploadProgress] = useState<number>(0);
@@ -173,6 +182,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
       const cryptCreatedLog = receipt.logs.find(log => log.topics[0] === encodedEventTopic);
       const cryptId = hexToBigInt(cryptCreatedLog?.topics[1] || "0x0");
       console.log("Crypt created", cryptId);
+      setCreatedCryptId(cryptId.toString());
       setSealCryptStatus("success");
     } catch (e) {
       console.error(e);
@@ -181,7 +191,20 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
     }
   };
 
-  const canCryptBeSealed = file && triggerText;
+  const canCryptBeSealed = file && triggerText && warden;
+
+  if (sealCryptStatus === "success") {
+    return (
+      <div className="flex flex-col w-full items-center gap-12 flex-shrink-0">
+        <div className="">
+          <pre>{asciiArt}</pre>
+        </div>
+        <Link href={`/view-crypt?cryptId=${createdCryptId}`} passHref target="_blank">
+          View created crypt #{createdCryptId}
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col w-full items-center gap-12 flex-shrink-0">
