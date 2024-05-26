@@ -24,8 +24,8 @@ contract CryptManager {
         bool isFinalized;
     }
 
-    Crypt[] public crypts;
     mapping(bytes32 => uint256) public assertionIdToCryptId;
+    Crypt[] public crypts;
 
     ExtendedOptimisticOracleV3Interface public optimisticOracle;
     uint64 public optimisticOracleLiveness;
@@ -53,25 +53,12 @@ contract CryptManager {
     error OnlyOwner(uint256 cryptId, address caller);
     error OnlyWarden(uint256 cryptId, address caller);
 
+    /// @notice Deploys a crypt manager to facilitate the creation & ward casting of the crypts.
+    /// @param _optimisticOracle The address of the optimistic oracle which will prophesize assertions of the wards cast on the crypts.
+    /// @param _optimisticOracleLiveness The liveness of the oracle's divining powers.
     constructor(address _optimisticOracle, uint64 _optimisticOracleLiveness) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
         optimisticOracleLiveness = _optimisticOracleLiveness;
-    }
-
-    // TODO: consider longevity & gas
-    /// @notice Fetches all registered crypts
-    /// @return Crypts An array containing all crypts ever registered.
-    function getCrypts() public view returns (Crypt[] memory) {
-        return crypts;
-    }
-
-    /// @notice Retrieves a crypt by it's registered ID.
-    /// @param amount The ID of crypt being retrieved.
-    /// @return Crypt A struct containing the state & details of the crypt.
-    function getCrypt(uint256 cryptId) public view returns (Crypt memory) {
-        if (crypts[cryptId].owner == address(0)) revert CryptIdNotFound(cryptId);
-
-        return crypts[cryptId];
     }
 
     /// @notice Allows a user to create a crypt.
@@ -149,7 +136,7 @@ contract CryptManager {
 
     /// @notice This allows the optimistic oracle to confirm if the ward has been triggered.
     /// @param assertionId The ID of the assertion the oracle is currently foreseeing the truthfullness of.
-    function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) public {
+    function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external {
         if (msg.sender != address(optimisticOracle)) revert MustBeOracle();
 
         // If the assertion was true, then the data assertion is resolved.
@@ -168,7 +155,7 @@ contract CryptManager {
 
     /// @notice This allows the optimistic oracle to dismiss assertions that are deemed false
     /// @param assertionId The ID of the assertion the oracle was requested to prophesize.
-    function assertionDisputedCallback(bytes32 assertionId) public {
+    function assertionDisputedCallback(bytes32 assertionId) external {
         if (msg.sender != address(optimisticOracle)) revert MustBeOracle();
 
         crypts[assertionIdToCryptId[assertionId]].assertionId = bytes32(0);
@@ -191,7 +178,7 @@ contract CryptManager {
 
     /// @notice This allows the warden to unseal a crypt and leave the keys in the door.
     /// @param cryptId The ID of the unsealed crypt.
-    function setDecryptionKey(uint256 cryptId, string memory decryptionKey) public {
+    function setDecryptionKey(uint256 cryptId, string memory decryptionKey) external {
         if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
 
         Crypt storage crypt = crypts[cryptId];
@@ -200,5 +187,21 @@ contract CryptManager {
 
         crypt.decryptionKey = decryptionKey;
         emit DecryptionKeySet(cryptId, decryptionKey);
+    }
+
+    // TODO: consider longevity & gas
+    /// @notice Fetches all registered crypts
+    /// @return Crypts An array containing all crypts ever registered.
+    function getCrypts() external view returns (Crypt[] memory) {
+        return crypts;
+    }
+
+    /// @notice Retrieves a crypt by it's registered ID.
+    /// @param cryptId The ID of crypt being retrieved.
+    /// @return Crypt A struct containing the state & details of the crypt.
+    function getCrypt(uint256 cryptId) external view returns (Crypt memory) {
+        if (crypts[cryptId].owner == address(0)) revert CryptIdNotFound(cryptId);
+
+        return crypts[cryptId];
     }
 }

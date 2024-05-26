@@ -44,48 +44,19 @@ contract WardenManager {
     error InsufficientStake();
     error MustBeOracle();
 
+    /// @notice Deploys a warden manager to recruit & govern the wardens of the catacombs.
+    /// @param _optimisticOracle The address of the optimistic oracle which will prophesize assertions to the wardens.
+    /// @param _optimisticOracleLiveness The liveness of the oracle's divining powers.
     constructor(address _optimisticOracle, uint64 _optimisticOracleLiveness) {
         optimisticOracle = ExtendedOptimisticOracleV3Interface(_optimisticOracle);
         optimisticOracleLiveness = _optimisticOracleLiveness;
-    }
-
-    /// @notice Gets the stake the warden offered when registering
-    /// @param warden The address of the warden
-    /// @param token The token address of the stake the warden offered for their service
-    function getWardenStakeInToken(address warden, IERC20 token) public view returns (uint256) {
-        return wardens[warden].stakedBalances[token];
-    }
-
-    /// @notice Retrieves the warden profile data
-    /// @param warden The address of the warden
-    /// @return tuple [string ipfsInfoHash,string nillionKey,bytes32 assertionId,bool isSlashed] The profile data of the warden.
-    function getWardenInfo(address warden)
-        public
-        view
-        returns (string memory ipfsInfoHash, string memory nillionKey, bytes32 assertionId, bool isSlashed)
-    {
-        return (
-            wardens[warden].ipfsInfoHash,
-            wardens[warden].nillionKey,
-            wardens[warden].assertionId,
-            wardens[warden].isSlashed
-        );
-    }
-
-    /// @notice Retrieves the warden profile data
-    /// @param warden The address of the warden
-    /// @param user The address of the user trusting the warden with their crypt
-    /// @param token The address of the token staked into the warden, by the user
-    /// @return UsersStake The amount of tokens the user staked to enlist the warden.
-    function getUserStakeOnWarden(address warden, address user, IERC20 token) public view returns (uint256) {
-        return wardens[warden].stakersToStakedBalances[user][token];
     }
 
     /// @notice Registers a new warden 
     /// @param wardenIpfsInfoHash The IPFS has that links the the wardens registration details
     /// @param wardenNillionKey The key the warden would be utilizing in the Nillion crypt
     function registerWarden(string memory wardenIpfsInfoHash, string memory wardenNillionKey) external {
-        if (wardens[msg.sender].nillionKey != "") revert WardenAlreadyRegistered(msg.sender);
+        if (bytes(wardens[msg.sender].nillionKey).length != 0) revert WardenAlreadyRegistered(msg.sender);
 
         wardens[msg.sender].ipfsInfoHash = wardenIpfsInfoHash;
         wardens[msg.sender].nillionKey = wardenNillionKey;
@@ -111,7 +82,7 @@ contract WardenManager {
     /// @param warden The address of the warden the stake is being removed from.
     /// @param token The address of the token used to enlist the warden.
     /// @param amount The amount of tokens used to enlist the warden.
-    function withdrawStake(address warden, IERC20 token, uint256 amount) public {
+    function withdrawStake(address warden, IERC20 token, uint256 amount) external {
         if (wardens[warden].stakersToStakedBalances[msg.sender][token] <= amount) revert InsufficientStake();
         if (wardens[warden].assertionId != bytes32(0)) revert AssertionPending(warden);
         if (wardens[warden].isSlashed) revert WardenAlreadySlashed(warden);
@@ -198,5 +169,40 @@ contract WardenManager {
         wardens[assertionIdToWarden[assertionId]].assertionId = bytes32(0);
         assertionIdToWarden[assertionId] = address(0);
         emit AssertionDisputed(assertionId, assertionIdToWarden[assertionId], msg.sender);
+    }
+
+    /// @notice Gets the stake the warden offered when registering
+    /// @param warden The address of the warden
+    /// @param token The token address of the stake the warden offered for their service
+    function getWardenStakeInToken(address warden, IERC20 token) external view returns (uint256) {
+        return wardens[warden].stakedBalances[token];
+    }
+
+    /// @notice Retrieves the warden profile data
+    /// @param warden The address of the warden
+    /// @return ipfsInfoHash The IPFS hash of the warden's profile.
+    /// @return nillionKey The Nillion key which identifies the warden.
+    /// @return assertionId The ID of the assertion currently being claimed regarding the warden.
+    /// @return isSlashed Indicates whether the warden has been penalized for misbehavior.
+    function getWardenInfo(address warden)
+        external
+        view
+        returns (string memory ipfsInfoHash, string memory nillionKey, bytes32 assertionId, bool isSlashed)
+    {
+        return (
+            wardens[warden].ipfsInfoHash,
+            wardens[warden].nillionKey,
+            wardens[warden].assertionId,
+            wardens[warden].isSlashed
+        );
+    }
+
+    /// @notice Retrieves the warden profile data
+    /// @param warden The address of the warden
+    /// @param user The address of the user trusting the warden with their crypt
+    /// @param token The address of the token staked into the warden, by the user
+    /// @return UsersStake The amount of tokens the user staked to enlist the warden.
+    function getUserStakeOnWarden(address warden, address user, IERC20 token) external view returns (uint256) {
+        return wardens[warden].stakersToStakedBalances[user][token];
     }
 }
