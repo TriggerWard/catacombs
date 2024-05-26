@@ -136,6 +136,7 @@ contract CryptManager {
 
     /// @notice This allows the optimistic oracle to confirm if the ward has been triggered.
     /// @param assertionId The ID of the assertion the oracle is currently foreseeing the truthfullness of.
+    /// @param assertedTruthfully Indicates whether the assertion resolved as truth or not.
     function assertionResolvedCallback(bytes32 assertionId, bool assertedTruthfully) external {
         if (msg.sender != address(optimisticOracle)) revert MustBeOracle();
 
@@ -178,6 +179,7 @@ contract CryptManager {
 
     /// @notice This allows the warden to unseal a crypt and leave the keys in the door.
     /// @param cryptId The ID of the unsealed crypt.
+    /// @param decryptionKey The key which can be used to decrypt the files within the crypt.
     function setDecryptionKey(uint256 cryptId, string memory decryptionKey) external {
         if (cryptId > crypts.length) revert CryptIdNotFound(cryptId);
 
