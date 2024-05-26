@@ -2,20 +2,39 @@
 
 Programmable, encrypted & triggarable data vault, an _encrypted data dead man's switch_. Upload and encrypt any file anonymously and have a natural language "trigger" initiate when to  decrypt and publicly release this data. 
 
-
+<p align="center">
+  <img alt="TriggerWard Logo" src="https://i.imgur.com/LzQYbkF.png" width="300">
+</p>
 
 
 ## Table of Contents
+- [Resources](#resources)
+- [Repo Structure](#repo-structure)
+- [Example Use Cases](#example-use-cases)
+- [How Trigger Ward Works](#how-trigger-ward-works)
+  - [Ethereum Trigger Mechanism](#1--ethereum-trigger-mechanism)
+  - [Nillion MPC DataCrypts](#2-nillion-mpc-datacrypts)
+  - [Ethereum Trigger Contract -> Nillion Nada Bridge](#3-ethereum-trigger-contract---nillion-nada-bridge)
+- [Running Locally](#running-locally)
+
+
+
 ## Resources
-- Trailer
-- Slide dec
-- Live website
-- Figma
-- Deployed Contracts(Sepolia):
+- [Trailer]()
+- [Slide deck]()
+- [Live website]()
+- [Figma]()
+- Deployed Contracts (Sepolia):
 	- `CryptManager`: [0xFIll]()
-	- WardenManager: 0xFill
+	- `WardenManager`: [0xFill]()
 
 ## Repo Structure
+| Package Name | Description |
+|--------------|-------------|
+| [hardhat](https://github.com/TriggerWard/catacombs/tree/main/packages/hardhat) | Smart contracts and configurations for blockchain interactions. |
+| [nextjs](https://github.com/TriggerWard/catacombs/tree/main/packages/nextjs) | Frontend for interacting with contracts and nillion. |
+| [nillion](https://github.com/TriggerWard/catacombs/tree/main/packages/nextjs/contracts) | Nillion Nada contracts and scripts for booting Nillion locally. |
+
 
 ## Example Use cases
 Trigger Ward can be used for a wide range of applications where you want to *conditionally release data based on some real world action*. Some examples are:
@@ -38,7 +57,7 @@ All triggers are stored in the `CryptManager` contract. This is the primary entr
 
 **Decrypting a crypt:** When the conditions to open a crypt have been met (the trigger is valid) any address can call `initiateDecrypt`. This then pulls a bond from the caller, which is held in escrow until the trigger validity is verified. At this point, the OO is called to validate the trigger fulfilment. On the resolution of the OO verification, the `assertionResolvedCallback` function is called by the OO on the `cryptManager` contract which sets the `isFinalized` bool to true. Once set, the Nillion dataCrypt logic can be executed.
 
-For more info on how the OO works and the risk it introduces into the protocol see below.
+For more info on how the Optimistic Oracle works and the risks it introduces into the protocol, see [How Trigger Ward Works](#how-the-optimistic-oracle-and-dvm-work).
 
 #### 2. Nillion MPC DataCrypts 
 Data within DataCrypts is stored within a Nada contract, encrypted and stored under MPC. When a user creates a dataCrypt in the front end the UI encrypts it and stores the data on IPFS. The Decryption key is stored within the Nillion Nada contract. This is done to reduce storage load on Nillion, simplifying the overall cost.
@@ -54,7 +73,7 @@ To accommodate this, when a user creates their DataCrypt they specify the warden
 
 Out of the box, the mechanism created accommodates more robust configurations including requiring an n/m setup of wardens wherein a datacrypt can only be de-crypted if a set of wardens agree to do the decryption. If this set is spread over a set of uncorrelated actors, who all have economic stake, this is sufficient for medium to high value data storage.
 
-For further justification on the game theory of why the Warden mechanism is acceptable for medium value secrets, see the section below. 
+For further justification on the game theory of why the Warden mechanism is acceptable for medium value secrets, see the [here](#warden-game-theory-and-future-improvements) below. 
 
 ## Local Development
 
@@ -127,15 +146,15 @@ yarn nillion-devnet
 
 If you want to compile your own Nada and extend the repo then see the nillion docs [here](https://docs.nillion.com/python-quickstart).
 
-## information Info on key sections 
-## How the Optimistic Oracle and the DVM work
+## Extra Info on Key Mechanism Details
+#### How the Optimistic Oracle and DVM Work
 The Optimistic Oracle functions by enabling anyone to make a public claim of a "truth" on any verifiable information. To make this assertion they place a bond to back it. Once placed, this assertion enters a liveness period in which it can be publicly verified. If the assertion passes the liveness period without challenge then it is taken as true. 
 
 If during this interval someone challenges the assertion then it is escalated to the [UMA Data Verification Mechanism](https://docs.uma.xyz/protocol-overview/how-does-umas-oracle-work#umas-data-verification-mechanism) (DVM).  The DVM is a schelling point oracle, Inspired by originally by Vitalik's  [Schelling Coin](https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed) mechanism from the early days of Ethereum. It operates through UMA token holders staking their UMA and voting in a blind Commit reveal voting system on the correct outcome of the dispute. This commit reveal mechanism hides the votes from other voters, making the only economically rational thing to do as a participant be to vote. The output from the majority vote is taken as true for the oracle resolution. Note that the DVM only ever arbitrates on the bonds being disputed within the OO so as long as the value of the UMA staked exceeds the sum of all bonds being disputed, it remains economically sound.
 
 Today, UMA has [~1.7bln TVS](https://dune.com/risk_labs/uma-total-value-secured) and has been running from early 2020 without any loss of funds, showing some level of lindyness.
 
-## Warden Game theory and future improvements
+#### Warden Game theory and future improvements
 From a game theory perspective, the warden mechanism works because the warden *does not know the contents of a datacrypt, nor how valuable it is*, which makes it impossible for them to price the profit they could extract from defaulting on their commitment and loosing their stake. Consider a warden has 100 WSETH staked (yielding ETH) staked and is the warden for 3 datacrypts: a) a cat photo b) secret government documents c) a personal will, to be released on someones death. Only one of these items of data are highly valuable, and 2 are worth nothing publicly. If the warden was to default on their duties and decryt data before a trigger is hit they would lose their bond but risk getting nothing of value out of the crypt and get slashed.
 
 In the future, the warden system should be replaced with a cryptographic solution, rather than an economic one. A native light client from Ethereum to Nillion would be the best bet here.
