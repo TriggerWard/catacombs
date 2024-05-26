@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SelectWarden, Warden } from "./select-warden";
 import { prepareWriteContract, waitForTransaction, writeContract } from "@wagmi/core";
 import { encodeEventTopics, hexToBigInt, toHex, zeroAddress } from "viem";
 import { useNetwork, useSwitchNetwork } from "wagmi";
@@ -17,9 +18,23 @@ import { wait } from "~~/utils/wait";
 
 type Status = "idle" | "pending" | "success" | "error";
 
+const WARDENS = [
+  {
+    name: "Warden 1",
+    address: "0x5d996408dbbBB9Fdbb15F7BA45A01e25f86E3131",
+    nillionUserKey: "4AY2pXeHDHJg6SScbD1CAdNGhMRMbsvz75Nf14Wg9HuULRwxUt5TkFkzYEm9rYBQQKapz8o5Pd1dK9UrkYTuM3mQ",
+  },
+  {
+    name: "Warden 2",
+    address: "0x93D9e141160174c7d62e0dCEDb1625Fd92509A32",
+    nillionUserKey: "5hG8DWxqTX7rtdrjFLuBF6AQFrmZZxfoGQYdVzXJDB9ReDhH1SPubAxnAgJPCZRy8LdV6MVMRGJycAww1z3MS2mg",
+  },
+];
+
 export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nillionClient: any }) {
   const [file, setFile] = useState<File | null>(null);
   const [triggerText, setTriggerText] = useState<string>("");
+  const [warden, setWarden] = useState<Warden>();
 
   const [fileUploadStatus, setFileUploadStatus] = useState<Status>("idle");
   const [fileUploadProgress, setFileUploadProgress] = useState<number>(0);
@@ -52,7 +67,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
 
   const handleCreateCrypt = async () => {
     try {
-      if (!file || !triggerText) {
+      if (!file || !triggerText || !warden) {
         throw new Error("File or trigger text required");
       }
       if (!cryptManagerData) {
@@ -85,6 +100,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
           fileType: file.type,
           triggerText,
           iv,
+          wardenUserKey: warden.nillionUserKey,
         },
         cryptFileName + "_metadata.json",
       );
@@ -93,12 +109,17 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
 
       // Store secret key on Nillion
       const nillionSecretName = `crypt_key_${pinnedMetadataIpfs.IpfsHash}`;
-      const nillionStoreId = await storeSecretsBlob(nillion, nillionClient, [
-        {
-          name: nillionSecretName,
-          value: base64ExportedKey,
-        },
-      ]);
+      const nillionStoreId = await storeSecretsBlob(
+        nillion,
+        nillionClient,
+        [
+          {
+            name: nillionSecretName,
+            value: base64ExportedKey,
+          },
+        ],
+        [warden.nillionUserKey],
+      );
       console.log("Stored secret key on Nillion", { nillionStoreId, nillionSecretName });
       setSealCryptProgress(80);
 
@@ -122,13 +143,7 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
           ,
         ] as const,
         functionName: "createCrypt",
-        args: [
-          pinnedMetadataIpfs.IpfsHash,
-          toHex(triggerText),
-          nillionStoreId,
-          "0x5d996408dbbBB9Fdbb15F7BA45A01e25f86E3131", // Default
-          zeroAddress,
-        ],
+        args: [pinnedMetadataIpfs.IpfsHash, toHex(triggerText), nillionStoreId, warden.address, zeroAddress],
       });
       const { hash } = await writeContract(request);
       setSealCryptProgress(89);
@@ -188,6 +203,16 @@ export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nill
       <div className="grid w-full items-center gap-4">
         <Label htmlFor="trigger">/ward_trigger</Label>
         <Textarea id="trigger" onChange={handleTriggerTextChange} />
+      </div>
+      <div className="grid w-full items-center gap-4">
+        <Label htmlFor="">/warden</Label>
+        <SelectWarden
+          selectedWardenAddress={warden?.address}
+          onSelect={wardenAddress => {
+            setWarden(WARDENS.find(warden => warden.address === wardenAddress));
+          }}
+          wardens={WARDENS}
+        />
       </div>
       {chain?.id !== 11155111 ? (
         <Button variant="ghost" onClick={() => switchNetwork?.()}>
