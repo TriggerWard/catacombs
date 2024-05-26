@@ -79,6 +79,10 @@ Out of the box, the mechanism created accommodates more robust configurations in
 
 For further justification on the game theory of why the Warden mechanism is acceptable for medium value secrets, see the [here](#warden-game-theory-and-future-improvements) below.
 
+**WardManagerContract:** To support the slashing mechanism described above, the `wardManagerContract` enables the registration of a warden, who can then receive stake. They can stake on themselfs or have others delegate stake to them. If a warden misbehaves, then anyone can call the `slashWarden` which challanges their behavour. To verify their miss-behavour, the OO is used to arbitrate the dispute. It can verify if the warden violated the terms of their SLA through failing to bridge information correctly to Nillion (not opening a datacrypt) or opening a datacrypt when it was not meant to be bridged. This contract has logic to bound when a user can stake/unstake, depending on if a warden is currently being slashed.
+
+**WardenClient:** The `warden` package contains code that a warden can run to automatically execute their role.
+
 ## Local Development
 
 There are three main sections to this repo that can be developed on locally:
