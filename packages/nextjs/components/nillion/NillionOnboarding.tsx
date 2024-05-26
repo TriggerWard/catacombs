@@ -16,8 +16,7 @@ export const NillionOnboarding = () => {
             passHref
           >
             MetaMask Flask browser extension
-          </Link>
-          {""}
+          </Link>{" "}
           to get access to MetaMask Snap
         </li>
         <li>- Temporarily disable any other wallet browser extensions - (Classic MetaMask, Rainbow Wallet, etc.)</li>
