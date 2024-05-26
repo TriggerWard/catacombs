@@ -7,6 +7,7 @@ import { Input } from "~~/components/ui/input";
 import { Label } from "~~/components/ui/label";
 import { useDeployedContractInfo } from "~~/hooks/scaffold-eth/useDeployedContractInfo";
 import { FetchedCrypt, fetchCryptWithStatus } from "~~/utils/crypt-manager";
+import { retrieveSecretBlob } from "~~/utils/nillion/retrieveSecretBlob";
 import { cn } from "~~/utils/ui";
 
 type Status = "idle" | "pending" | "success" | "error";
@@ -25,7 +26,7 @@ export function CryptDetails({
   const [searchStatus, setSearchStatus] = useState<Status>("idle");
 
   const [mutationState, setMutationState] = useState<{
-    action: "initUnseal" | "deleteCrypt" | "unseal";
+    action: "initUnseal" | "finalizeUnseal" | "deleteCrypt" | "unseal" | "setDecryptionKey";
     status: Status;
   }>({
     action: "initUnseal",
@@ -33,20 +34,22 @@ export function CryptDetails({
   });
 
   const { data: cryptManagerData } = useDeployedContractInfo("CryptManager");
+  const { data: ooV3Data } = useDeployedContractInfo("OOV3");
   const { address: connectedAddress } = useAccount();
 
   const handleSearchCryptId = useCallback(async () => {
     try {
       setSearchStatus("pending");
-      if (!cryptIdToSearch || !cryptManagerData) {
+      if (!cryptIdToSearch || !cryptManagerData || !ooV3Data) {
         throw new Error("Crypt ID or CryptManager not found");
       }
       const cryptId = BigInt(cryptIdToSearch);
-      const crypt = await fetchCryptWithStatus(cryptId, cryptManagerData.address);
+      const crypt = await fetchCryptWithStatus(cryptId, cryptManagerData.address, ooV3Data.address);
       console.log("Crypt", crypt);
       setFoundCrypt(crypt);
       setSearchStatus("success");
     } catch (e) {
+      setFoundCrypt(undefined);
       console.error("Error searching crypt", e);
       setSearchStatus("error");
     }
@@ -61,7 +64,7 @@ export function CryptDetails({
   const handleInitiateUnseal = async () => {
     try {
       setMutationState({ action: "initUnseal", status: "pending" });
-      if (!foundCrypt || !cryptManagerData) {
+      if (!foundCrypt || !cryptManagerData || !ooV3Data) {
         throw new Error("Crypt not found");
       }
 
@@ -86,7 +89,7 @@ export function CryptDetails({
       console.log("Transaction receipt", receipt);
 
       // update crypt status
-      const updatedCrypt = await fetchCryptWithStatus(foundCrypt.cryptId, cryptManagerData.address);
+      const updatedCrypt = await fetchCryptWithStatus(foundCrypt.cryptId, cryptManagerData.address, ooV3Data.address);
       console.log("Updated crypt", updatedCrypt);
       setFoundCrypt(updatedCrypt);
       setMutationState({ action: "initUnseal", status: "success" });
@@ -99,7 +102,7 @@ export function CryptDetails({
   const handleDeleteCrypt = async () => {
     try {
       setMutationState({ action: "deleteCrypt", status: "pending" });
-      if (!foundCrypt || !cryptManagerData) {
+      if (!foundCrypt || !cryptManagerData || !ooV3Data) {
         throw new Error("Crypt not found");
       }
 
@@ -128,7 +131,7 @@ export function CryptDetails({
       console.log("Transaction receipt", receipt);
 
       // update crypt status
-      const updatedCrypt = await fetchCryptWithStatus(foundCrypt.cryptId, cryptManagerData.address);
+      const updatedCrypt = await fetchCryptWithStatus(foundCrypt.cryptId, cryptManagerData.address, ooV3Data.address);
       console.log("Updated crypt", updatedCrypt);
       setFoundCrypt(updatedCrypt);
       setMutationState({ action: "deleteCrypt", status: "success" });
@@ -138,7 +141,100 @@ export function CryptDetails({
     }
   };
 
+  const handleRevealDecryptionKey = async () => {
+    try {
+      setMutationState({ action: "setDecryptionKey", status: "pending" });
+      if (!foundCrypt || !cryptManagerData || !ooV3Data) {
+        throw new Error("Crypt not found");
+      }
+
+      if (foundCrypt.cryptData.warden !== connectedAddress) {
+        throw new Error("Only the warden can reveal the decryption key");
+      }
+
+      // Get decryption key
+      const cryptMetadataIpfsHash = foundCrypt.cryptData.ipfsDataHash;
+      const nillionStoreId = foundCrypt.cryptData.nillionCrypt;
+      const nillionSecretName = `crypt_key_${cryptMetadataIpfsHash}`;
+      const base64RetrievedKey = await retrieveSecretBlob(nillionClient, nillionStoreId, nillionSecretName);
+
+      // Call CryptManager.sol
+      const { request } = await prepareWriteContract({
+        address: cryptManagerData.address,
+        abi: [
+          {
+            inputs: [
+              { internalType: "uint256", name: "cryptId", type: "uint256" },
+              { internalType: "string", name: "decryptionKey", type: "string" },
+            ],
+            name: "setDecryptionKey",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
+          },
+        ],
+        functionName: "setDecryptionKey",
+        args: [foundCrypt.cryptId, base64RetrievedKey],
+      });
+      const { hash } = await writeContract(request);
+      console.log("Transaction hash", hash);
+      const receipt = await waitForTransaction({ hash, confirmations: 1 });
+      console.log("Transaction receipt", receipt);
+
+      // update crypt status
+      const updatedCrypt = await fetchCryptWithStatus(foundCrypt.cryptId, cryptManagerData.address, ooV3Data.address);
+      console.log("Updated crypt", updatedCrypt);
+      setFoundCrypt(updatedCrypt);
+      setMutationState({ action: "unseal", status: "success" });
+    } catch (e) {
+      console.error("Error revealing decryption key", e);
+      setMutationState({ action: "unseal", status: "error" });
+    }
+  };
+
+  const handleFinalizeUnseal = async () => {
+    try {
+      setMutationState({ action: "finalizeUnseal", status: "pending" });
+      if (!foundCrypt || !cryptManagerData || !ooV3Data) {
+        throw new Error("Crypt not found");
+      }
+
+      // Call CryptManager.sol
+      const { request } = await prepareWriteContract({
+        address: ooV3Data.address,
+        abi: [
+          {
+            inputs: [{ internalType: "bytes32", name: "assertionId", type: "bytes32" }],
+            name: "settleAssertion",
+            outputs: [],
+            stateMutability: "nonpayable",
+            type: "function",
+          },
+        ],
+        functionName: "settleAssertion",
+        args: [foundCrypt.cryptData.assertionId],
+      });
+      const { hash } = await writeContract(request);
+      console.log("Transaction hash", hash);
+      const receipt = await waitForTransaction({ hash, confirmations: 1 });
+      console.log("Transaction receipt", receipt);
+
+      // update crypt status
+      const updatedCrypt = await fetchCryptWithStatus(foundCrypt.cryptId, cryptManagerData.address, ooV3Data.address);
+      console.log("Updated crypt", updatedCrypt);
+      setFoundCrypt(updatedCrypt);
+      setMutationState({ action: "finalizeUnseal", status: "success" });
+    } catch (e) {
+      console.error("Error finalizing unseal", e);
+      setMutationState({ action: "finalizeUnseal", status: "error" });
+    }
+  };
+
   const isOwner = foundCrypt?.cryptData.owner === connectedAddress;
+  const isWarden = foundCrypt?.cryptData.warden === connectedAddress;
+  const canBeFinalized =
+    foundCrypt?.cryptStatus === "unseal-initiated" && Number(foundCrypt.assertionExpirationTime) < Date.now() / 1000;
+  const isDecryptionKeyRevealed = !!foundCrypt?.cryptData.decryptionKey;
 
   return (
     <div className="flex flex-col items-center gap-12 flex-shrink-0">
@@ -180,8 +276,8 @@ export function CryptDetails({
               <div className="text-sm">{foundCrypt.cryptData.owner}</div>
             </div>
             <div>
-              <div className="font-bold">/nillion_id</div>
-              <div className="text-sm">{foundCrypt.cryptData.nillionCrypt}</div>
+              <div className="font-bold">/warden</div>
+              <div className="text-sm">{foundCrypt.cryptData.warden}</div>
             </div>
             <div>
               <div className="font-bold">/enc_file</div>
@@ -200,6 +296,13 @@ export function CryptDetails({
                   : "initiate unsealing"}
               </Button>
             )}
+            {foundCrypt.cryptStatus === "unseal-initiated" && canBeFinalized ? (
+              <Button variant="outline" onClick={handleFinalizeUnseal} disabled={mutationState.status === "pending"}>
+                {mutationState.action === "finalizeUnseal" && mutationState.status === "pending"
+                  ? "finalizing unseal..."
+                  : "finalize unseal"}
+              </Button>
+            ) : null}
             {isOwner && foundCrypt.cryptStatus === "sealed" && (
               <Button
                 variant="outline"
@@ -210,6 +313,17 @@ export function CryptDetails({
                 {mutationState.action === "deleteCrypt" && mutationState.status === "pending"
                   ? "deleting crypt..."
                   : "delete crypt"}
+              </Button>
+            )}
+            {isWarden && !isDecryptionKeyRevealed && foundCrypt.cryptStatus === "unsealed" && (
+              <Button
+                variant="outline"
+                onClick={handleRevealDecryptionKey}
+                disabled={mutationState.status === "pending"}
+              >
+                {mutationState.action === "setDecryptionKey" && mutationState.status === "pending"
+                  ? "revealing decryption key..."
+                  : "reveal decryption key"}
               </Button>
             )}
             {isOwner || !!foundCrypt.cryptData.decryptionKey ? (
