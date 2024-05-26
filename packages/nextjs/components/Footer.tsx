@@ -48,6 +48,13 @@ export const Footer = () => {
           </Link>
         </div>
         <div className="flex flex-row gap-4">
+          <Link
+            href="https://github.com/TriggerWard/catacombs?tab=readme-ov-file#-trigger-ward"
+            passHref
+            target="_blank"
+          >
+            <span className="">about</span>
+          </Link>
           <Link href="https://github.com/TriggerWard/catacombs" passHref target="_blank">
             <span className="">github</span>
           </Link>

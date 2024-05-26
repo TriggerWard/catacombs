@@ -25,15 +25,15 @@ export const metadata: Metadata = {
       template: "%s | Trigger Warding",
     },
     description: "Built for ETHBerlin4",
-    images: [
-      {
-        url: imageUrl,
-      },
-    ],
+    // images: [
+    //   {
+    //     url: imageUrl,
+    //   },
+    // ],
   },
   twitter: {
     card: "summary_large_image",
-    images: [imageUrl],
+    // images: [imageUrl],
     title: {
       default: "Trigger Warding",
       template: "%s | Trigger Warding",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     description: "Built for ETHBerlin4",
   },
   icons: {
-    icon: [{ url: "/favicon.png", sizes: "32x32", type: "image/png" }],
+    icon: [{ url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" }],
   },
 };
 

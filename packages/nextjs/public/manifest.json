@@ -1,5 +1,5 @@
 {
-  "name": "Scaffold-ETH 2 DApp",
-  "description": "A DApp built with Scaffold-ETH",
-  "iconPath": "logo.svg"
+  "name": "trigger_warding",
+  "description": "Programmable, encrypted & triggarable data vault, an _encrypted data dead man's switch_. Upload and encrypt any file anonymously and have a natural language 'trigger' initiate when to  decrypt and publicly release this data.",
+  "iconPath": "favicon-32x32.png"
 }
