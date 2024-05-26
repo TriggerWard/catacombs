@@ -20,6 +20,7 @@ contract WardenManagerTest is CommonOptimisticOracleV3Test {
         minimumBond = optimisticOracleV3.getMinimumBond(address(defaultCurrency));
     }
 
+    // Unit tests
     function test_RegisterWarden() public {
         vm.prank(warden);
         wardenManager.registerWarden(sampleIpfsInfoHash, sampleNillionKey);
@@ -66,43 +67,6 @@ contract WardenManagerTest is CommonOptimisticOracleV3Test {
         assertTrue(
             finalBalance == initialBalance - stakeAmount, "Caller's balance should decrease by the staked amount"
         );
-    }
-
-    function test_StakeOnWardenMultiToken() public {
-        // Register a warden with multiple tokens
-        vm.prank(warden);
-        wardenManager.registerWarden(sampleIpfsInfoHash, sampleNillionKey);
-
-        // Define staking details for multiple tokens
-        uint256 stakeAmountDefault = 420e18;
-        uint256 stakeAmountNewToken = 210e18;
-        TestnetERC20 newToken = new TestnetERC20("NewToken", "NT", 18);
-        newToken.allocateTo(asserter, stakeAmountNewToken);
-
-        // Stake with default currency
-        defaultCurrency.allocateTo(asserter, stakeAmountDefault);
-        vm.startPrank(asserter);
-        defaultCurrency.approve(address(wardenManager), stakeAmountDefault);
-        wardenManager.stakeOnWarden(warden, defaultCurrency, stakeAmountDefault);
-
-        // Stake with new token
-        newToken.approve(address(wardenManager), stakeAmountNewToken);
-        wardenManager.stakeOnWarden(warden, newToken, stakeAmountNewToken);
-        vm.stopPrank();
-
-        // Verify staked amounts for both tokens
-        uint256 stakedAmountDefault = wardenManager.getWardenStakeInToken(warden, defaultCurrency);
-        uint256 stakedAmountNewToken = wardenManager.getWardenStakeInToken(warden, newToken);
-        assertTrue(stakedAmountDefault == stakeAmountDefault, "Staked amount with default currency should match");
-        assertTrue(stakedAmountNewToken == stakeAmountNewToken, "Staked amount with new token should match");
-
-        // Verify user's stake on the warden for both tokens
-        uint256 userStakeDefault =
-            wardenManager.getUserStakeOnWarden(warden, asserter, defaultCurrency);
-        uint256 userStakeNewToken =
-            wardenManager.getUserStakeOnWarden(warden, asserter, newToken);
-        assertTrue(userStakeDefault == stakeAmountDefault, "User's staked amount with default currency should match");
-        assertTrue(userStakeNewToken == stakeAmountNewToken, "User's staked amount with new token should match");
     }
 
     function test_WithdrawStake() public {
@@ -180,6 +144,57 @@ contract WardenManagerTest is CommonOptimisticOracleV3Test {
         assertTrue(assertion.callbackRecipient == address(wardenManager), "Callback recipient should be this contract");
         assertTrue(assertion.disputer == address(0), "Disputer should be address 0 initially");
     }
+
+    // function executeSlash() public
+
+    // Oracles
+
+    // function assertionResolvedCallback() public
+    // function assertionDisputedCallback() public
+
+    // View tests
+    // function getWardenStakeInToken() public
+    // function test_getWardenInfo() public 
+    // function getUserStakeOnWarden() public
+
+    // Lifecycle tests
+    function test_StakeOnWardenMultiToken() public {
+        // Register a warden with multiple tokens
+        vm.prank(warden);
+        wardenManager.registerWarden(sampleIpfsInfoHash, sampleNillionKey);
+
+        // Define staking details for multiple tokens
+        uint256 stakeAmountDefault = 420e18;
+        uint256 stakeAmountNewToken = 210e18;
+        TestnetERC20 newToken = new TestnetERC20("NewToken", "NT", 18);
+        newToken.allocateTo(asserter, stakeAmountNewToken);
+
+        // Stake with default currency
+        defaultCurrency.allocateTo(asserter, stakeAmountDefault);
+        vm.startPrank(asserter);
+        defaultCurrency.approve(address(wardenManager), stakeAmountDefault);
+        wardenManager.stakeOnWarden(warden, defaultCurrency, stakeAmountDefault);
+
+        // Stake with new token
+        newToken.approve(address(wardenManager), stakeAmountNewToken);
+        wardenManager.stakeOnWarden(warden, newToken, stakeAmountNewToken);
+        vm.stopPrank();
+
+        // Verify staked amounts for both tokens
+        uint256 stakedAmountDefault = wardenManager.getWardenStakeInToken(warden, defaultCurrency);
+        uint256 stakedAmountNewToken = wardenManager.getWardenStakeInToken(warden, newToken);
+        assertTrue(stakedAmountDefault == stakeAmountDefault, "Staked amount with default currency should match");
+        assertTrue(stakedAmountNewToken == stakeAmountNewToken, "Staked amount with new token should match");
+
+        // Verify user's stake on the warden for both tokens
+        uint256 userStakeDefault =
+            wardenManager.getUserStakeOnWarden(warden, asserter, defaultCurrency);
+        uint256 userStakeNewToken =
+            wardenManager.getUserStakeOnWarden(warden, asserter, newToken);
+        assertTrue(userStakeDefault == stakeAmountDefault, "User's staked amount with default currency should match");
+        assertTrue(userStakeNewToken == stakeAmountNewToken, "User's staked amount with new token should match");
+    }
+
 
     function test_SlashingPreventsStakeWithdrawal() public {
         // Setup: Register a warden and stake on it
@@ -288,4 +303,5 @@ contract WardenManagerTest is CommonOptimisticOracleV3Test {
         assertTrue(assertionId == bytes32(0), "assertionId should be reset to 0");
         assertTrue(isSlashed == false, "isSlashed should be false");
     }
+
 }
