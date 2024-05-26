@@ -1,233 +1,145 @@
-# 🏗 Scaffold-Nillion
+# 🔓 Trigger Ward
 
-This template has all the power of the [Scaffold-ETH 2 dapp toolkit](https://github.com/scaffold-eth/scaffold-eth-2) with a Nillion integration so that you can store, retrieve, and run blind computation on secrets stored in Nillion.
+Programmable, encrypted & triggarable data vault, an _encrypted data dead man's switch_. Upload and encrypt any file anonymously and have a natural language "trigger" initiate when to  decrypt and publicly release this data. 
 
-## Requirements
 
-Before you begin, you need to install the following tools:
 
-- `nilup`, an installer and version manager for the [Nillion SDK tools](https://docs.nillion.com/nillion-sdk-and-tools). Install nilup:
 
-  _For the security-conscious, please download the `install.sh` script, so that you can inspect how
-  it works, before piping it to `bash`._
+## Table of Contents
+## Resources
+- Trailer
+- Slide dec
+- Live website
+- Figma
+- Deployed Contracts(Sepolia):
+	- `CryptManager`: [0xFIll]()
+	- WardenManager: 0xFill
 
-  ```
-  curl https://nilup.nilogy.xyz/install.sh | bash
-  ```
+## Repo Structure
 
-  - Confirm `nilup` installation
-    ```
-    nilup -V
-    ```
+## Example Use cases
+Trigger Ward can be used for a wide range of applications where you want to *conditionally release data based on some real world action*. Some examples are:
 
-- [Nillion SDK tools](https://docs.nillion.com/nillion-sdk-and-tools) Use `nilup` to install these:
-  ```bash
-  nilup install latest
-  nilup use latest
-  nilup init
-  ```
-  - Confirm global Nillion tool installation
-    ```
-    nillion -V
-    ```
-- [Node (>= v18.17)](https://nodejs.org/en/download/)
+1. **Whistleblower and Journalistic Safeguards**: Automatically release encrypted evidence or investigative reports if a whistleblower or journalist is silenced, harmed, or goes missing.    
+2. **Protest Coordination**: Encrypt and schedule the release of protest plans to prevent authorities from preempting demonstrations, ensuring activists can gather and act in safety.
+3. **Misconduct Deterrence**: Enforce accountability by revealing the identity and actions of individuals if they engage in unethical or harmful behavior, acting as a deterrent against misconduct.
 
-  - Check version with
-    ```
-    node -v
-    ```
+# How Trigger Ward Works
+Trigger ward functions by storing encrypted data within [Nillion](https://nillion.com/)'s MPC network which can only be decrypted when an action is executed within an Ethereum Smart contract, the "trigger". This trigger leverages [UMA's Optimistic Oracle](https://docs.uma.xyz/protocol-overview/how-does-umas-oracle-work) (OO) to prove public truths on-chain and enable the decrypting on data from Nillion.
 
-- [python3](https://www.python.org/downloads/) version 3.11 or higher with a working [pip](https://pip.pypa.io/en/stable/getting-started/) installed
+Conceptually, there are three main components to Trigger Ward: 1) Ethereum Trigger that initiate when to execute an action on Nillion 2) Nillion Nada contracts that store encrypted data on the users behalf and 3) a bridge to enable logic on Ethereum to execute functions in Nada. Each are broken down in detail below.
 
-  - Confirm that you have python3 (version >=3.11) and pip installed:
-    ```
-    python3 --version
-    python3 -m pip --version
-    ```
+#### 1.  **Ethereum Trigger Mechanism**
+Triggers are described in natural language, which is verified using the Optimistic Oracle in conjunction with economic bonding. A trigger can any statement of truth. For example, "This DataCrypt will be release on the 20th of April 2024" or "If Person X is proven to be dead, as specified in an official EU report, release the DataCrypt". 
 
-- Yarn ([v1](https://classic.yarnpkg.com/en/docs/install/) or [v2+](https://yarnpkg.com/getting-started/install))
-  - Check version with
-    ```
-    yarn -v
-    ```
-- [Git](https://git-scm.com/downloads)
+All triggers are stored in the `CryptManager` contract. This is the primary entry point for most system actions. It stores key crypt information, arbitrates part of the trigger logic and is the intergration point with the Optimistic Oracle. The latest version of this contract can be found.
 
-To use Scaffold-ETH 2 with Nillion, you need to have the MetaMask Flask browser extension installed and to store your Nillion user key in MetaMask Snaps
+**Creating a crypt:** When a user creates a new dataCrypt they call the `createCrypt` function, specifying an IPFS hash to their encrypted data, bytes field containing the natural language trigger, the nillionCrypt address that has their private data and lastly a decryption callback that lets arbitrary on-chain logic be called when a crypt is opened.
 
-1. Install the [MetaMask Flask browser extension](https://docs.metamask.io/snaps/get-started/install-flask/) that will let you work with experimental snaps.
-2. Create a new test wallet in MetaMask Flask
-3. Temporarily disable any other wallet browser extensions (Classic MetaMask, Rainbow Wallet, etc.) while using MetaMask Flask
-4. [Visit the Nillion Key Management UI](https://nillion-snap-site.vercel.app/) to generate a user key and store it in MetaMask Snaps - this saves your user key within MetaMask so it can be used by other Nillion web apps
-5. This quickstart will ask you to "Connect to Snap" to use your Nillion user key
+**Decrypting a crypt:** When the conditions to open a crypt have been met (the trigger is valid) any address can call `initiateDecrypt`. This then pulls a bond from the caller, which is held in escrow until the trigger validity is verified. At this point, the OO is called to validate the trigger fulfilment. On the resolution of the OO verification, the `assertionResolvedCallback` function is called by the OO on the `cryptManager` contract which sets the `isFinalized` bool to true. Once set, the Nillion dataCrypt logic can be executed.
 
-## Quickstart
+For more info on how the OO works and the risk it introduces into the protocol see below.
 
-To get started with Scaffold-ETH 2, follow the steps below:
+#### 2. Nillion MPC DataCrypts 
+Data within DataCrypts is stored within a Nada contract, encrypted and stored under MPC. When a user creates a dataCrypt in the front end the UI encrypts it and stores the data on IPFS. The Decryption key is stored within the Nillion Nada contract. This is done to reduce storage load on Nillion, simplifying the overall cost.
 
-### 1. Clone this repo & install dependencies
+The data stored in a crypt can have arbitrarily complex logic associated with it. The simplest flow is *only release this data if its triggered by an action on Ethereum* but it can be more complex such as *release part of this data to these addresses, and this other data to these other sets of addresses*.
 
+#### 3. Ethereum Trigger Contract -> Nillion Nada Bridge
+In order for a DataCrypt to know when to release data(or run its arbitrary data computation logic) it needs to be able to read the `isFinalized` variable from the `CryptManager` on Ethereum. However, there is currently no mechanism for Nillion to read Ethereum state. One solution to this could be to create an Ethereum light client in Nada to enable Nillion to prove  Ethereum state. However, the computation and time complexity of doing this in Nada is prohibitive. 
+
+Cryptoeconomic solutions to this problem are more tractable, so we created a *Warden* mechanism to bridge data between the two domains. This works by enabling anyone to elect to become a warden and place an economic bond on their future behavour, under the risk that they will be slashed if they misbehave. Others can also stake on a warden to overall increase the economic security of their actions (i.e delegated staking). 
+
+To accommodate this, when a user creates their DataCrypt they specify the warden that they elect to bridge the execution action from Ethereum to Nillion and decrypt the data on their behalf. The warden is then responsible for checking when a trigger has been resolved (`isFinalized==true`) and responding by executing the Nada code to decrypt the users data. The warden mechanism is a stop gap solution that can be improved later (it's just a module in the overall system, after all) and be replaced by a more robust technique in the future. The contracts are designed to have a drop in replacement for the Warden, letting the crypt creator choose how they want to enable this.
+
+Out of the box, the mechanism created accommodates more robust configurations including requiring an n/m setup of wardens wherein a datacrypt can only be de-crypted if a set of wardens agree to do the decryption. If this set is spread over a set of uncorrelated actors, who all have economic stake, this is sufficient for medium to high value data storage.
+
+For further justification on the game theory of why the Warden mechanism is acceptable for medium value secrets, see the section below. 
+
+## Local Development
+
+There are three main sections to this repo that can be developed on locally:
+
+#### a) Front End
+To setup & run the front end clone the repo, install dependencies and run the appropriate yarn command. Make sure you are using at least node 18.x
 ```
-git clone https://github.com/NillionNetwork/scaffold-eth-with-nillion.git
-cd scaffold-eth-with-nillion
+git clone https://github.com/TriggerWard/catacombs
 yarn install
+yarn start
 ```
 
-### 2. Run the Nillion devnet in the first terminal:
+This config won't run easily against the Nillion test network (this is what the the deployed version of the UI at x does) as you require access to the closed [beta Nillion chain](https://docs.nillion.com/#nillion-network-access). Alternatively, the full stack can be run against the system deployed locally. Once the UI is running execute sections b and c and come back to the UI.
+#### b) Solidity Smart Contracts
+The smart contracts & tests can be developed on locally using Foundry. To use this, first install Foundry, if you dont have it already.
 
-This bootstraps Nillion devnet, a local network of nodes and adds cluster info to your NextJS app .env file and blockchain info to your Hardhat .env file
+```
+curl -L [https://foundry.paradigm.xyz](https://foundry.paradigm.xyz/) | bash
+foundryup
+```
 
+Once this is done, navigate to the `contracts` directory, where you can run the unit tests.
+```
+cd ./packages
+forge test
+```
+
+Note that this repo has *both* Hardhat and Foundry. Hardhat is used by some parts of the nillion system. To correctly configure this, if you want to run the repo locally, run the following from the root of the repo:
+```
+yarn chain
+```
+In a separate console run:
+```
+yarn deploy
+```
+#### c) Nillion Local Devnet
+To get the Nillion devnet running locally you must first install the `nilup` installer and version manager for the Nillion SDK tools.
+```
+curl https://nilup.nilogy.xyz/install.sh | bash
+```
+Then, confirm `nilup` installation:
+
+```
+nilup -V
+```
+Use `nilup` to install these:
+
+```bash
+nilup install latest
+nilup use latest
+nilup init
+```
+
+Confirm global Nillion tool installation
+```
+nillion -V
+```
+
+If you want to compile Nillion code, then you require `python3` and a set of packages that come with it. Else, skip this. If you dont have python then get it here - [python3](https://www.python.org/downloads/) with  a working [pip](https://pip.pypa.io/en/stable/getting-started/) installed. Confirm with:
+```
+python3 --version
+python3 -m pip --version
+``````
+
+Once this is done we are ready to start the `nillion-devnet` with:
 ```
 yarn nillion-devnet
 ```
 
-### 3. Run a local ethereum network in the second terminal:
+If you want to compile your own Nada and extend the repo then see the nillion docs [here](https://docs.nillion.com/python-quickstart).
 
-```
-yarn chain
-```
+## information Info on key sections 
+## How the Optimistic Oracle and the DVM work
+The Optimistic Oracle functions by enabling anyone to make a public claim of a "truth" on any verifiable information. To make this assertion they place a bond to back it. Once placed, this assertion enters a liveness period in which it can be publicly verified. If the assertion passes the liveness period without challenge then it is taken as true. 
 
-This command starts a local Ethereum network using Hardhat. The network runs on your local machine and can be used for testing and development. You can customize the network configuration in `hardhat.config.ts`.
+If during this interval someone challenges the assertion then it is escalated to the [UMA Data Verification Mechanism](https://docs.uma.xyz/protocol-overview/how-does-umas-oracle-work#umas-data-verification-mechanism) (DVM).  The DVM is a schelling point oracle, Inspired by originally by Vitalik's  [Schelling Coin](https://blog.ethereum.org/2014/03/28/schellingcoin-a-minimal-trust-universal-data-feed) mechanism from the early days of Ethereum. It operates through UMA token holders staking their UMA and voting in a blind Commit reveal voting system on the correct outcome of the dispute. This commit reveal mechanism hides the votes from other voters, making the only economically rational thing to do as a participant be to vote. The output from the majority vote is taken as true for the oracle resolution. Note that the DVM only ever arbitrates on the bonds being disputed within the OO so as long as the value of the UMA staked exceeds the sum of all bonds being disputed, it remains economically sound.
 
-### 4. Open a third terminal and deploy the test ethereum contract:
+Today, UMA has [~1.7bln TVS](https://dune.com/risk_labs/uma-total-value-secured) and has been running from early 2020 without any loss of funds, showing some level of lindyness.
 
-```
-yarn deploy
-```
+## Warden Game theory and future improvements
+From a game theory perspective, the warden mechanism works because the warden *does not know the contents of a datacrypt, nor how valuable it is*, which makes it impossible for them to price the profit they could extract from defaulting on their commitment and loosing their stake. Consider a warden has 100 WSETH staked (yielding ETH) staked and is the warden for 3 datacrypts: a) a cat photo b) secret government documents c) a personal will, to be released on someones death. Only one of these items of data are highly valuable, and 2 are worth nothing publicly. If the warden was to default on their duties and decryt data before a trigger is hit they would lose their bond but risk getting nothing of value out of the crypt and get slashed.
 
-This command deploys a test smart contract to the local network. The contract is located in `packages/hardhat/contracts` and can be modified to suit your needs. The `yarn deploy` command uses the deploy script located in `packages/hardhat/deploy` to deploy the contract to the network. You can also customize the deploy script.
+In the future, the warden system should be replaced with a cryptographic solution, rather than an economic one. A native light client from Ethereum to Nillion would be the best bet here.
 
-### 5. Optional: Nada program setup
 
-If you want to write your own Nada programs, open another terminal to create and activate a python virtual environment
 
-```
-cd packages/nillion && sh create-venv.sh && source .venv/bin/activate
-```
-
-The [nada tool](https://docs.nillion.com/nada) was used to initiate a project inside of packages/nillion/next-project-programs. Create a new Nada program file in next-project-programs/src
-
-```
-cd next-project-programs
-touch src/{your-nada-program-name}.py
-```
-
-For example, if your program is `tiny_secret_addition.py`, run
-
-```
-cd next-project-programs
-touch src/tiny_secret_addition.py
-```
-
-Write your Nada program in the file you just created. Then add the program path, name, and a prime size to your nada-project.toml file
-
-```toml
-[[programs]]
-path = "src/{your-nada-program-name}.py"
-name = "{your-nada-program-name}"
-prime_size = 128
-```
-
-For example, if your program was `tiny_secret_addition.py`, add to nada-project.toml:
-
-```toml
-[[programs]]
-path = "src/tiny_secret_addition.py"
-name = "tiny_secret_addition"
-prime_size = 128
-```
-
-Run the build command to build all programs added to the nada-project.toml file, creating nada.bin files for each Nada program.
-
-```
-nada build
-```
-
-[Generate a test file](https://docs.nillion.com/nada#generate-a-test-file) for your program passing in the test name and program name.
-
-```
-nada generate-test --test-name {your-test-name} {your-nada-program-name}
-```
-
-For example, if your program was `tiny_secret_addition.py`, run
-
-```
-nada generate-test --test-name tiny_secret_addition tiny_secret_addition
-```
-
-Update values in tests/{your-test-name}.yaml and run the test
-
-```
-nada run {your-test-name}
-```
-
-For example, if your test name was `tiny_secret_addition`, run
-
-```
-nada run tiny_secret_addition
-```
-
-Copy program binary file ({your-nada-program-name}.nada.bin) into nextjs public programs folder to use them in the nextjs app.
-
-```
-cp target/{your-nada-program-name}.nada.bin ../../nextjs/public/programs
-```
-
-For example, if your program was `tiny_secret_addition.py`, run
-
-```
-cp target/tiny_secret_addition.nada.bin ../../nextjs/public/programs
-```
-
-Copy the program file ({your-nada-program-name}.py) into nextjs public programs folder
-
-```
-cp src/{your-nada-program-name}.py ../../nextjs/public/programs
-```
-
-For example, if your program was `tiny_secret_addition.py`, run
-
-```
-cp src/tiny_secret_addition.py ../../nextjs/public/programs
-```
-
-Now the NextJs app has the Nada program and binaries in the `nextjs/public/programs` folder, where the program can be stored using the JavaScript Client.
-
-### 6. Open one more terminal to start your NextJS web app:
-
-```
-yarn start
-```
-
-Visit your app on: `http://localhost:3000`. You can interact with your smart contract using the `Debug Contracts` page. You can tweak the app config in `packages/nextjs/scaffold.config.ts`.
-
-Run smart contract test with `yarn hardhat:test`
-
-- Edit your smart contract `YourContract.sol` in `packages/hardhat/contracts`
-- Edit your frontend in `packages/nextjs/pages`
-- Edit your deployment scripts in `packages/hardhat/deploy`
-
-### 7. Visit the Nillion Blind Computation demo page and try the working demo
-
-- Visit the Nillion Blind Computation page to try out Blind Computation: `http://localhost:3000/nillion-compute`
-- Optinally edit the code for this page in `packages/nextjs/app/nillion-compute/page.tsx`
-
-### 8. Complete the TODOs in the Hello World page to hook up a working Nillion store and retrieve example
-
-- Visit the Nillion Hello World page: `http://localhost:3000/nillion-hello-world`
-- Notice that the buttons and functionality for this page are not hooked up yet.
-- Edit the code for this page in `packages/nextjs/app/nillion-hello-world/page.tsx` to complete each of the 🎯 TODOs to get the page working
-- Need a hint on how to get something working? Take a look at the completed `packages/nextjs/app/nillion-hello-world-complete/page.tsx` page
-
-## About Scaffold-ETH 2
-
-🧪 [Scaffold-ETH 2](https://docs.scaffoldeth.io) is an open-source, up-to-date toolkit for building decentralized applications (dapps) on the Ethereum blockchain. It's designed to make it easier for developers to create and deploy smart contracts and build user interfaces that interact with those contracts.
-
-⚙️ Built using NextJS, RainbowKit, Hardhat, Wagmi, Viem, and Typescript.
-
-- ✅ **Contract Hot Reload**: Your frontend auto-adapts to your smart contract as you edit it.
-- 🪝 **[Custom hooks](https://docs.scaffoldeth.io/hooks/)**: Collection of React hooks wrapper around [wagmi](https://wagmi.sh/) to simplify interactions with smart contracts with typescript autocompletion.
-- 🧱 [**Components**](https://docs.scaffoldeth.io/components/): Collection of common web3 components to quickly build your frontend.
-- 🔥 **Burner Wallet & Local Faucet**: Quickly test your application with a burner wallet and local faucet.
-- 🔐 **Integration with Wallet Providers**: Connect to different wallet providers and interact with the Ethereum network.
-
-![Debug Contracts tab](https://github.com/scaffold-eth/scaffold-eth-2/assets/55535804/b237af0c-5027-4849-a5c1-2e31495cccb1)
+  
