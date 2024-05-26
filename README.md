@@ -1,7 +1,5 @@
 # 🔓 Trigger Ward
 
-<iframe src="https://drive.google.com/file/d/1zm09r3kqN8soFlopG6oSQs2f-W-OyJ1R/preview" width="640" height="480" allow="autoplay"></iframe>
-
 Programmable, encrypted & triggerable data vault, an _encrypted data dead man's switch_. Upload and encrypt any file anonymously and have a natural language "trigger" initiate when to decrypt and publicly release this data.
 
 <p align="center">
