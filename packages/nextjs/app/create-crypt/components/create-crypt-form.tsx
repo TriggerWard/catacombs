@@ -33,10 +33,10 @@ const WARDENS = [
 ];
 
 const asciiArt = `
-      .--.
-     /.-. '----------.
-     \'-' .--"--""-"-'
-      '--'
+  .--.
+ /.-. '----------.
+ \'-' .--"--""-"-'
+  '--'
 `;
 
 export function CreateCryptForm({ nillion, nillionClient }: { nillion: any; nillionClient: any }) {

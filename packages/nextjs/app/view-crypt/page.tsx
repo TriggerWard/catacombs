@@ -76,33 +76,6 @@ const ViewCrypt: NextPage = () => {
               Connect to Snap with your Nillion User Key
             </Button>
           )}
-
-          {/* {connectedToSnap && (
-            <div>
-              {userKey && (
-                <div>
-                  <div className="flex justify-center items-center space-x-2">
-                    <p className="my-2 font-medium">
-                      🤫 Nillion User Key from{" "}
-                      <a target="_blank" href="https://nillion-snap-site.vercel.app/" rel="noopener noreferrer">
-                        MetaMask Flask
-                      </a>
-                      :
-                    </p>
-
-                    <CopyString str={userKey} />
-                  </div>
-
-                  {userId && (
-                    <div className="flex justify-center items-center space-x-2">
-                      <p className="my-2 font-medium">Connected as Nillion User ID:</p>
-                      <CopyString str={userId} />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )} */}
         </div>
 
         <div className="flex-grow w-full">

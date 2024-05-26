@@ -37,27 +37,30 @@ export function CryptDetails({
   const { data: ooV3Data } = useDeployedContractInfo("OOV3");
   const { address: connectedAddress } = useAccount();
 
-  const handleSearchCryptId = useCallback(async () => {
-    try {
-      setSearchStatus("pending");
-      if (!cryptIdToSearch || !cryptManagerData || !ooV3Data) {
-        throw new Error("Crypt ID or CryptManager not found");
+  const handleSearchCryptId = useCallback(
+    async (cryptId: string) => {
+      try {
+        setSearchStatus("pending");
+        if (!cryptManagerData || !ooV3Data) {
+          throw new Error("OOv3 or CryptManager not found");
+        }
+        const cryptIdBn = BigInt(cryptId);
+        const crypt = await fetchCryptWithStatus(cryptIdBn, cryptManagerData.address, ooV3Data.address);
+        console.log("Crypt", crypt);
+        setFoundCrypt(crypt);
+        setSearchStatus("success");
+      } catch (e) {
+        setFoundCrypt(undefined);
+        console.error("Error searching crypt", e);
+        setSearchStatus("error");
       }
-      const cryptId = BigInt(cryptIdToSearch);
-      const crypt = await fetchCryptWithStatus(cryptId, cryptManagerData.address, ooV3Data.address);
-      console.log("Crypt", crypt);
-      setFoundCrypt(crypt);
-      setSearchStatus("success");
-    } catch (e) {
-      setFoundCrypt(undefined);
-      console.error("Error searching crypt", e);
-      setSearchStatus("error");
-    }
-  }, [cryptIdToSearch, cryptManagerData]);
+    },
+    [cryptManagerData, ooV3Data],
+  );
 
   useEffect(() => {
     if (cryptId) {
-      handleSearchCryptId();
+      handleSearchCryptId(cryptId);
     }
   }, [cryptId, handleSearchCryptId]);
 
@@ -245,7 +248,7 @@ export function CryptDetails({
         <div className="flex w-full items-center">
           <Input value={cryptIdToSearch} id="crypt-id" onChange={e => setCryptIdToSearch(e.target.value)} />
           <Button
-            onClick={handleSearchCryptId}
+            onClick={() => handleSearchCryptId(cryptIdToSearch)}
             variant="ghost"
             disabled={searchStatus === "pending" || !Boolean(cryptIdToSearch)}
           >
